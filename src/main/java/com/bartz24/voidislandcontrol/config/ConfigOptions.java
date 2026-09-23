@@ -92,9 +92,12 @@ public class ConfigOptions {
 		public boolean forceSpawn = false;
 		@Config.Comment("Sets how long the buffs are given when spawning on an island in ticks (I think)")
 		public int buffTimer = 1200;
-		@Config.Comment("Shoule VoidIslandControl handle player respawn? Disabling this would make players without a island respawn at worldspawn instead of 0,0")
+		@Config.Comment("Should VoidIslandControl handle player respawn? Disabling this would make players without a island respawn at worldspawn instead of 0,0")
 		public boolean handleRespawn = true;
-
+		@Config.Comment("If true, players are pulled back when they wander too far from their island (or the island they are visiting) and are shown the lockdown message")
+		public boolean islandLockdown = false;
+		@Config.Comment("Distance from island center that triggers lockdown. Only used when islandLockdown is true")
+		public int islandLockdownRange = 500;
 		@Config.Comment("Settings for the grass island")
 		public GrassIslandSettings grassSettings = new GrassIslandSettings();
 
