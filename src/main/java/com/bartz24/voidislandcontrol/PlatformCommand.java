@@ -22,6 +22,8 @@ import net.minecraft.world.GameType;
 import net.minecraft.world.World;
 import net.minecraft.world.border.WorldBorder;
 import net.minecraftforge.common.MinecraftForge;
+import java.util.UUID;
+import net.minecraft.server.MinecraftServer;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -74,7 +76,8 @@ public class PlatformCommand extends CommandBase implements ICommand {
                 return args.length == 2 ? getListOfStringsMatchingLastWord(args, IslandManager.getIslandGenTypes())
                         : Collections.<String>emptyList();
             } else if (subCommand.equals("visit") || subCommand.equals("spectate")) {
-                return args.length == 2 ? getListOfStringsMatchingLastWord(args, server.getOnlinePlayerNames())
+                return args.length == 2
+                        ? getListOfStringsMatchingLastWord(args, IslandManager.getKnownIslandPlayerNames(server))
                         : Collections.<String>emptyList();
             } else if (subCommand.equals("kick")) {
                 return args.length == 2 ? getListOfStringsMatchingLastWord(args, server.getOnlinePlayerNames())
@@ -184,15 +187,23 @@ public class PlatformCommand extends CommandBase implements ICommand {
             return;
         }
 
-        EntityPlayerMP player2 = (EntityPlayerMP) player.getEntityWorld().getPlayerEntityByName(args[1]);
-        IslandPos isPos = player2 == null ? null : IslandManager.getPlayerIsland(player2.getGameProfile().getId());
+        MinecraftServer server = player.getServer();
+        UUID targetId = IslandManager.findPlayerUUID(server, args[1]);
 
-        if (args[1].equals(player.getName())) {
+        if (targetId == null) {
+            player.sendMessage(new TextComponentString("Player doesn't exist or has never logged in."));
+            return;
+        }
+
+        if (targetId.equals(player.getGameProfile().getId())) {
             player.sendMessage(new TextComponentString("Can't visit your own island."));
             return;
         }
+
+        IslandPos isPos = IslandManager.getPlayerIsland(targetId);
+
         if (isPos == null) {
-            player.sendMessage(new TextComponentString("Player doesn't exist or player doesn't have an island."));
+            player.sendMessage(new TextComponentString("That player doesn't have an island."));
             return;
         }
 

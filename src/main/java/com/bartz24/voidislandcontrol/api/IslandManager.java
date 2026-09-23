@@ -14,6 +14,8 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.text.TextComponentString;
 import net.minecraft.util.text.TextFormatting;
 import net.minecraft.world.World;
+import com.mojang.authlib.GameProfile;
+import net.minecraft.server.MinecraftServer;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -319,5 +321,32 @@ public class IslandManager {
         if (!data.hasKey(EntityPlayer.PERSISTED_NBT_TAG))
             data.setTag(EntityPlayer.PERSISTED_NBT_TAG, new NBTTagCompound());
         return data.getCompoundTag(EntityPlayer.PERSISTED_NBT_TAG);
+    }
+
+    public static UUID findPlayerUUID(MinecraftServer server, String name) {
+        if (server == null || name == null)
+            return null;
+        EntityPlayerMP online = server.getPlayerList().getPlayerByUsername(name);
+        if (online != null)
+            return online.getGameProfile().getId();
+        GameProfile profile = server.getPlayerProfileCache().getGameProfileForUsername(name);
+        return profile == null ? null : profile.getId();
+    }
+
+    public static List<String> getKnownIslandPlayerNames(MinecraftServer server) {
+        List<String> names = new ArrayList<String>();
+        if (server == null)
+            return names;
+        for (IslandPos pos : CurrentIslandsList) {
+            for (String id : pos.getPlayerUUIDs()) {
+                try {
+                    GameProfile profile = server.getPlayerProfileCache().getProfileByUUID(UUID.fromString(id));
+                    if (profile != null && profile.getName() != null && !names.contains(profile.getName()))
+                        names.add(profile.getName());
+                } catch (Exception ignored) {
+                }
+            }
+        }
+        return names;
     }
 }
