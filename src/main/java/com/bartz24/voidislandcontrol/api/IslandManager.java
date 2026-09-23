@@ -208,18 +208,26 @@ public class IslandManager {
         player.setSpawnPoint(pos, true);
     }
 
-    public static void setVisitLoc(EntityPlayer player, int x, int y) {
+    public static void setVisitLoc(EntityPlayer player, int x, int y, boolean spectate) {
         NBTTagCompound persist = setPlayerData(player);
-
         persist.setInteger("VICVisitX", x);
         persist.setInteger("VICVisitY", y);
+        persist.setBoolean("VICSpectate", spectate);
+    }
+
+    public static void setVisitLoc(EntityPlayer player, int x, int y) {
+        setVisitLoc(player, x, y, false);
     }
 
     public static void removeVisitLoc(EntityPlayer player) {
         NBTTagCompound persist = setPlayerData(player);
-
         persist.removeTag("VICVisitX");
         persist.removeTag("VICVisitY");
+        persist.removeTag("VICSpectate");
+    }
+
+    public static boolean isVisitSpectate(EntityPlayer player) {
+        return setPlayerData(player).getBoolean("VICSpectate");
     }
 
     public static boolean hasVisitLoc(EntityPlayer player) {

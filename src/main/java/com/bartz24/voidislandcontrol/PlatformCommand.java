@@ -59,7 +59,7 @@ public class PlatformCommand extends CommandBase implements ICommand {
                                           @Nullable BlockPos targetPos) {
         if (args.length == 1) {
             return getListOfStringsMatchingLastWord(args, "create", "invite", "join", "leave", "kick", "home", "spawn",
-                    "reset", "visit", "onechunk");
+                    "reset", "visit", "spectate", "onechunk");
         } else {
             String subCommand = args[0];
             subCommand = subCommand.trim();
@@ -73,7 +73,7 @@ public class PlatformCommand extends CommandBase implements ICommand {
             } else if (subCommand.equals("reset")) {
                 return args.length == 2 ? getListOfStringsMatchingLastWord(args, IslandManager.getIslandGenTypes())
                         : Collections.<String>emptyList();
-            } else if (subCommand.equals("visit")) {
+            } else if (subCommand.equals("visit") || subCommand.equals("spectate")) {
                 return args.length == 2 ? getListOfStringsMatchingLastWord(args, server.getOnlinePlayerNames())
                         : Collections.<String>emptyList();
             } else if (subCommand.equals("kick")) {
@@ -129,7 +129,11 @@ public class PlatformCommand extends CommandBase implements ICommand {
                 MinecraftForge.EVENT_BUS.post(
                         new IslandResetEvent(player, IslandManager.getPlayerIsland(player.getGameProfile().getId())));
             } else if (subCommand.equals("visit")) {
-                visit(player, args);
+                visit(player, args, false);
+                MinecraftForge.EVENT_BUS.post(
+                        new IslandVisitEvent(player, IslandManager.getPlayerIsland(player.getGameProfile().getId())));
+            } else if (subCommand.equals("spectate")) {
+                visit(player, args, true);
                 MinecraftForge.EVENT_BUS.post(
                         new IslandVisitEvent(player, IslandManager.getPlayerIsland(player.getGameProfile().getId())));
             } else if (subCommand.equals("kick")) {
@@ -162,7 +166,7 @@ public class PlatformCommand extends CommandBase implements ICommand {
 
     }
 
-    public static void visit(EntityPlayerMP player, String[] args) throws CommandException {
+    public static void visit(EntityPlayerMP player, String[] args, boolean spectate) throws CommandException {
         if (!ConfigOptions.commandSettings.allowVisitCommand) {
             player.sendMessage(new TextComponentString("This command was disabled"));
             return;
@@ -181,14 +185,12 @@ public class PlatformCommand extends CommandBase implements ICommand {
         }
 
         EntityPlayerMP player2 = (EntityPlayerMP) player.getEntityWorld().getPlayerEntityByName(args[1]);
-
         IslandPos isPos = player2 == null ? null : IslandManager.getPlayerIsland(player2.getGameProfile().getId());
 
         if (args[1].equals(player.getName())) {
             player.sendMessage(new TextComponentString("Can't visit your own island."));
             return;
         }
-
         if (isPos == null) {
             player.sendMessage(new TextComponentString("Player doesn't exist or player doesn't have an island."));
             return;
@@ -197,12 +199,10 @@ public class PlatformCommand extends CommandBase implements ICommand {
         BlockPos visitPos = new BlockPos(isPos.getX() * ConfigOptions.islandSettings.islandDistance,
                 ConfigOptions.islandSettings.islandYLevel, isPos.getY() * ConfigOptions.islandSettings.islandDistance);
 
-        IslandManager.setVisitLoc(player, isPos.getX(), isPos.getY());
-        player.setGameType(GameType.SPECTATOR);
-
+        IslandManager.setVisitLoc(player, isPos.getX(), isPos.getY(), spectate);
+        player.setGameType(spectate ? GameType.SPECTATOR : GameType.ADVENTURE);
         player.connection.setPlayerLocation(visitPos.getX() + 0.5, visitPos.getY(), visitPos.getZ() + 0.5,
                 player.rotationYaw, player.rotationPitch);
-
     }
 
     public static void kick(EntityPlayerMP player, String[] args) throws CommandException {
@@ -331,7 +331,10 @@ public class PlatformCommand extends CommandBase implements ICommand {
                 + "\n THE COMMAND IS NOT ALLOWED TO BE USED. SET THE CONFIG OPTION TO TRUE.")));
 
         player.sendMessage(new TextComponentString(TextFormatting.RED + "visit <player>" + TextFormatting.WHITE
-                + " : Visit another player's island in spectator mode."));
+                + " : Visit another player's island in adventure mode."));
+
+        player.sendMessage(new TextComponentString(TextFormatting.RED + "spectate <player>" + TextFormatting.WHITE
+                + " : Spectate another player's island."));
     }
 
     public static void newPlatform(EntityPlayerMP player, String[] args) throws CommandException {

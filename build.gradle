@@ -1,10 +1,14 @@
 buildscript {
     repositories {
         maven { url = "https://maven.minecraftforge.net" }
+        maven { url = "https://www.cursemaven.com" }
         mavenCentral()
     }
+
     dependencies {
-        classpath "net.minecraftforge.gradle:ForgeGradle:3.+"
+        minecraft "net.minecraftforge:forge:1.12.2-14.23.5.2864"
+
+        implementation fg.deobf("curse.maven:botania-225643:3337685")
     }
 }
 

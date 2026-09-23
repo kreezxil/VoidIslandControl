@@ -119,10 +119,13 @@ public class EventHandler {
             EntityPlayer player = (EntityPlayer) event.getEntityLiving();
 
             if (player.getEntityWorld().getWorldInfo().getTerrainType() instanceof WorldTypeVoid
-                    && IslandManager.hasVisitLoc(player) && player.dimension == ConfigOptions.worldGenSettings.baseDimension && !player.isCreative()) {
+                    && IslandManager.hasVisitLoc(player) && player.dimension == ConfigOptions.worldGenSettings.baseDimension
+                    && !player.isCreative()) {
+                GameType want = IslandManager.isVisitSpectate(player) ? GameType.SPECTATOR : GameType.ADVENTURE;
                 if (player instanceof EntityPlayerMP
-                        && ((EntityPlayerMP) player).interactionManager.getGameType() != GameType.SPECTATOR)
-                    player.setGameType(GameType.SPECTATOR);
+                        && ((EntityPlayerMP) player).interactionManager.getGameType() != want)
+                    player.setGameType(want);
+                // existing protection-range check stays as-is
                 int posX = IslandManager.getVisitLoc(player).getX() * ConfigOptions.islandSettings.islandDistance;
                 int posY = IslandManager.getVisitLoc(player).getY() * ConfigOptions.islandSettings.islandDistance;
                 if (ConfigOptions.islandSettings.islandProtection && (
