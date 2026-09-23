@@ -172,6 +172,11 @@ public class ConfigOptions {
 		}
 	}
 
+	@Config.Comment("If true, players are pulled back when they wander too far from their island (or the island they are visiting) and are shown the lockdown message")
+	public boolean islandLockdown = false;
+	@Config.Comment("Distance from island center that triggers lockdown. Only used when islandLockdown is true")
+	public int islandLockdownRange = 500;
+
 	@Config.Comment("Config Settings for the world generation")
 	public static CommandSettings commandSettings = new CommandSettings();
 
@@ -214,6 +219,22 @@ public class ConfigOptions {
 		public enum CommandBlockType {
 			NONE, IMPULSE, REPEATING, CHAIN
 		}
+	}
+
+	@Config.Comment("What a visiting (non-op) player may do. All false = walk and talk only. Ops on visit stay survival and ignore these.")
+	public VisitSettings visitSettings = new VisitSettings();
+
+	public static class VisitSettings {
+		@Config.Comment("Allow visitors to right-click blocks and machines (chests, furnaces, etc.)")
+		public boolean allowBlockInteract = false;
+		@Config.Comment("Allow visitors to use items in the air / on blocks")
+		public boolean allowItemUse = false;
+		@Config.Comment("Allow visitors to interact with entities (item frames, villagers, armor stands)")
+		public boolean allowEntityInteract = false;
+		@Config.Comment("Allow visitors to attack entities")
+		public boolean allowAttack = false;
+		@Config.Comment("Allow visitors to pick up items")
+		public boolean allowPickup = false;
 	}
 
 	@Config.Comment("Config Settings for other stuff")

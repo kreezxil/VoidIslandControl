@@ -13,6 +13,7 @@ import net.minecraft.potion.PotionEffect;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.text.TextComponentString;
 import net.minecraft.util.text.TextFormatting;
+import net.minecraft.world.GameType;
 import net.minecraft.world.World;
 import com.mojang.authlib.GameProfile;
 import net.minecraft.server.MinecraftServer;
@@ -348,5 +349,19 @@ public class IslandManager {
             }
         }
         return names;
+    }
+
+    public static boolean isOperator(EntityPlayer player) {
+        if (player == null || player.getServer() == null)
+            return false;
+        return player.getServer().getPlayerList().canSendCommands(player.getGameProfile());
+    }
+
+    public static GameType getVisitGameType(EntityPlayer player) {
+        if (isVisitSpectate(player))
+            return net.minecraft.world.GameType.SPECTATOR;
+        if (isOperator(player))
+            return net.minecraft.world.GameType.SURVIVAL;
+        return net.minecraft.world.GameType.ADVENTURE;
     }
 }

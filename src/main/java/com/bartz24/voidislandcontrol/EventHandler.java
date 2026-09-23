@@ -15,7 +15,6 @@ import net.minecraft.entity.passive.EntityCow;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.init.Blocks;
-import net.minecraft.server.MinecraftServer;
 import net.minecraft.tileentity.TileEntityCommandBlock;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.text.TextComponentString;
@@ -26,6 +25,8 @@ import net.minecraft.world.WorldType;
 import net.minecraft.world.border.WorldBorder;
 import net.minecraftforge.client.event.GuiOpenEvent;
 import net.minecraftforge.event.entity.living.LivingEvent.LivingUpdateEvent;
+import net.minecraftforge.event.entity.player.AttackEntityEvent;
+import net.minecraftforge.event.entity.player.EntityItemPickupEvent;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 import net.minecraftforge.event.world.WorldEvent.Save;
 import net.minecraftforge.event.world.WorldEvent.Unload;
@@ -48,7 +49,6 @@ public class EventHandler {
     public void onOpenGui(GuiOpenEvent e) {
         if (e.getGui() instanceof GuiCreateWorld
                 && Minecraft.getMinecraft().currentScreen instanceof GuiWorldSelection) {
-            // Thanks YUNoMakeGoodMap :D
             GuiCreateWorld cw = (GuiCreateWorld) e.getGui();
             ReflectionHelper.setPrivateValue(GuiCreateWorld.class, cw, getType(), "field_146331_K", "selectedIndex");
         }
@@ -61,12 +61,14 @@ public class EventHandler {
         }
         return 0;
     }
+
     @SubscribeEvent
     public void playerLogin(PlayerEvent.PlayerLoggedInEvent event) {
         if (!event.player.getEntityWorld().isRemote) {
             EntityPlayer player = event.player;
 
-            if (player.getEntityWorld().getWorldInfo().getTerrainType() instanceof WorldTypeVoid && player.dimension == ConfigOptions.worldGenSettings.baseDimension) {
+            if (player.getEntityWorld().getWorldInfo().getTerrainType() instanceof WorldTypeVoid
+                    && player.dimension == ConfigOptions.worldGenSettings.baseDimension) {
                 if (IslandManager.spawnedPlayers.size() == 0
                         || !IslandManager.hasPlayerSpawned(player.getGameProfile().getId())) {
                     World world = player.getEntityWorld();
@@ -78,9 +80,13 @@ public class EventHandler {
                         world.setSpawnPoint(pos);
                         createSpawn(player, player.getEntityWorld(), spawn);
                     }
-                    IslandManager.tpPlayerToPos(player, new BlockPos(0, ConfigOptions.islandSettings.islandYLevel, 0), IslandManager.CurrentIslandsList.get(0));
+                    IslandManager.tpPlayerToPos(player,
+                            new BlockPos(0, ConfigOptions.islandSettings.islandYLevel, 0),
+                            IslandManager.CurrentIslandsList.get(0));
 
-                    boolean autoCreate = ConfigOptions.islandSettings.autoCreate || (player.getServer().isDedicatedServer() && ConfigOptions.islandSettings.autoCreateServersOnly);
+                    boolean autoCreate = ConfigOptions.islandSettings.autoCreate
+                            || (player.getServer().isDedicatedServer()
+                            && ConfigOptions.islandSettings.autoCreateServersOnly);
 
                     if (autoCreate && !IslandManager.worldOneChunk) {
 
@@ -113,46 +119,49 @@ public class EventHandler {
             }
         }
     }
+
     @SubscribeEvent
     public void playerUpdate(LivingUpdateEvent event) {
         if (event.getEntityLiving() instanceof EntityPlayer && !event.getEntity().getEntityWorld().isRemote) {
             EntityPlayer player = (EntityPlayer) event.getEntityLiving();
 
             if (player.getEntityWorld().getWorldInfo().getTerrainType() instanceof WorldTypeVoid
-                    && IslandManager.hasVisitLoc(player) && player.dimension == ConfigOptions.worldGenSettings.baseDimension
-                    && !player.isCreative()) {
-                GameType want = IslandManager.isVisitSpectate(player) ? GameType.SPECTATOR : GameType.ADVENTURE;
+                    && IslandManager.hasVisitLoc(player)
+                    && player.dimension == ConfigOptions.worldGenSettings.baseDimension && !player.isCreative()) {
+                GameType want = IslandManager.getVisitGameType(player);
                 if (player instanceof EntityPlayerMP
                         && ((EntityPlayerMP) player).interactionManager.getGameType() != want)
                     player.setGameType(want);
-                // existing protection-range check stays as-is
+
                 int posX = IslandManager.getVisitLoc(player).getX() * ConfigOptions.islandSettings.islandDistance;
                 int posY = IslandManager.getVisitLoc(player).getY() * ConfigOptions.islandSettings.islandDistance;
-                if (ConfigOptions.islandSettings.islandProtection && (
-                        Math.abs(player.posX - posX) > ConfigOptions.islandSettings.protectionBuildRange
-                                || Math.abs(player.posZ - posY) > ConfigOptions.islandSettings.protectionBuildRange)) {
+                if (ConfigOptions.islandSettings.islandLockdown && !IslandManager.isOperator(player) && (
+                        Math.abs(player.posX - posX) > ConfigOptions.islandSettings.islandLockdownRange
+                                || Math.abs(player.posZ - posY) > ConfigOptions.islandSettings.islandLockdownRange)) {
                     if (player.ticksExisted % 60 == 0)
                         player.sendMessage(
                                 new TextComponentString(TextFormatting.RED + "You can't be visiting that far away!"));
                     player.setGameType(GameType.SURVIVAL);
+                    IslandPos visit = IslandManager.getVisitLoc(player);
                     IslandManager.removeVisitLoc(player);
                     IslandManager.tpPlayerToPos(player,
-                            new BlockPos(posX, ConfigOptions.islandSettings.islandYLevel, posY), IslandManager.getVisitLoc(player));
+                            new BlockPos(posX, ConfigOptions.islandSettings.islandYLevel, posY), visit);
                 }
             }
 
             if (player.getEntityWorld().getWorldInfo().getTerrainType() instanceof WorldTypeVoid
-                    && player.dimension == ConfigOptions.worldGenSettings.baseDimension && !player.isCreative() && !IslandManager.hasVisitLoc(player)) {
-                if (player.getServer().isDedicatedServer() && (ConfigOptions.islandSettings.islandProtection && (Math.abs(player.posX) > ConfigOptions.islandSettings.protectionBuildRange
-                        || Math.abs(player.posZ) > ConfigOptions.islandSettings.protectionBuildRange))) {
+                    && player.dimension == ConfigOptions.worldGenSettings.baseDimension && !player.isCreative()
+                    && !IslandManager.hasVisitLoc(player) && !IslandManager.isOperator(player)) {
+                if (player.getServer() != null && player.getServer().isDedicatedServer()
+                        && ConfigOptions.islandSettings.islandLockdown) {
                     IslandPos pos = IslandManager.getPlayerIsland(player.getGameProfile().getId());
                     int posX = pos == null ? 0 : (pos.getX() * ConfigOptions.islandSettings.islandDistance);
                     int posY = pos == null ? 0 : (pos.getY() * ConfigOptions.islandSettings.islandDistance);
-                    if (ConfigOptions.islandSettings.islandProtection && (Math.abs(player.posX - posX) > ConfigOptions.islandSettings.protectionBuildRange
-                            || Math.abs(player.posZ - posY) > ConfigOptions.islandSettings.protectionBuildRange)) {
+                    if (Math.abs(player.posX - posX) > ConfigOptions.islandSettings.islandLockdownRange
+                            || Math.abs(player.posZ - posY) > ConfigOptions.islandSettings.islandLockdownRange) {
                         if (player.ticksExisted % 60 == 0)
-                            player.sendMessage(
-                                    new TextComponentString(TextFormatting.RED + "You can't be away from your island or spawn that far away!"));
+                            player.sendMessage(new TextComponentString(TextFormatting.RED
+                                    + "You can't be away from your island or spawn that far away!"));
                         player.setGameType(GameType.SURVIVAL);
                         IslandManager.tpPlayerToPos(player,
                                 new BlockPos(posX, ConfigOptions.islandSettings.islandYLevel, posY), pos);
@@ -160,7 +169,6 @@ public class EventHandler {
                 }
             }
 
-            List<IslandPos> removeAt = new ArrayList<>();
             if (IslandManager.hasJoinLoc(player)) {
                 int time = IslandManager.getJoinTime(player);
                 if (time > 0)
@@ -178,6 +186,49 @@ public class EventHandler {
 
             loadWorld(player);
         }
+    }
+
+    private static boolean isRestrictedVisitor(EntityPlayer player) {
+        return IslandManager.hasVisitLoc(player) && !IslandManager.isVisitSpectate(player)
+                && !IslandManager.isOperator(player) && !player.isCreative();
+    }
+
+    @SubscribeEvent
+    public void onVisitInteract(PlayerInteractEvent event) {
+        EntityPlayer player = event.getEntityPlayer();
+        if (player.world.isRemote || !isRestrictedVisitor(player))
+            return;
+
+        ConfigOptions.CommandSettings.VisitSettings v = ConfigOptions.commandSettings.visitSettings;
+        boolean cancel = false;
+        if (event instanceof PlayerInteractEvent.RightClickBlock
+                || event instanceof PlayerInteractEvent.LeftClickBlock)
+            cancel = !v.allowBlockInteract;
+        else if (event instanceof PlayerInteractEvent.RightClickItem)
+            cancel = !v.allowItemUse;
+        else if (event instanceof PlayerInteractEvent.EntityInteract)
+            cancel = !v.allowEntityInteract;
+
+        if (cancel && event.isCancelable())
+            event.setCanceled(true);
+    }
+
+    @SubscribeEvent
+    public void onVisitAttack(AttackEntityEvent event) {
+        EntityPlayer player = event.getEntityPlayer();
+        if (player.world.isRemote || !isRestrictedVisitor(player))
+            return;
+        if (!ConfigOptions.commandSettings.visitSettings.allowAttack)
+            event.setCanceled(true);
+    }
+
+    @SubscribeEvent
+    public void onVisitPickup(EntityItemPickupEvent event) {
+        EntityPlayer player = event.getEntityPlayer();
+        if (player.world.isRemote || !isRestrictedVisitor(player))
+            return;
+        if (!ConfigOptions.commandSettings.visitSettings.allowPickup)
+            event.setCanceled(true);
     }
 
     private static void loadWorld(EntityPlayer player) {
@@ -270,6 +321,10 @@ public class EventHandler {
                 te.setAuto(ConfigOptions.commandSettings.commandBlockAuto);
             }
         }
+    }
+
+    private static class IslandGenSafe {
+        // placeholder - do not use; see spawnPlat below
     }
 
     private static void mainSpawn(World world, BlockPos spawn) {

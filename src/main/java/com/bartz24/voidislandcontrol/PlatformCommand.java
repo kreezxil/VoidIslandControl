@@ -22,13 +22,12 @@ import net.minecraft.world.GameType;
 import net.minecraft.world.World;
 import net.minecraft.world.border.WorldBorder;
 import net.minecraftforge.common.MinecraftForge;
-import java.util.UUID;
-import net.minecraft.server.MinecraftServer;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 
 public class PlatformCommand extends CommandBase implements ICommand {
     private static List<String> aliases;
@@ -61,7 +60,7 @@ public class PlatformCommand extends CommandBase implements ICommand {
                                           @Nullable BlockPos targetPos) {
         if (args.length == 1) {
             return getListOfStringsMatchingLastWord(args, "create", "invite", "join", "leave", "kick", "home", "spawn",
-                    "reset", "visit", "spectate", "onechunk");
+                    "reset", "visit", "spectate", "list", "onechunk");
         } else {
             String subCommand = args[0];
             subCommand = subCommand.trim();
@@ -139,6 +138,8 @@ public class PlatformCommand extends CommandBase implements ICommand {
                 visit(player, args, true);
                 MinecraftForge.EVENT_BUS.post(
                         new IslandVisitEvent(player, IslandManager.getPlayerIsland(player.getGameProfile().getId())));
+            } else if (subCommand.equals("list")) {
+                listIslands(player);
             } else if (subCommand.equals("kick")) {
                 kick(player, args);
             } else if (subCommand.equals("onechunk")) {
@@ -167,6 +168,27 @@ public class PlatformCommand extends CommandBase implements ICommand {
             }
         }
 
+    }
+
+    public static void listIslands(EntityPlayerMP player) {
+        MinecraftServer server = player.getServer();
+        List<String> names = IslandManager.getKnownIslandPlayerNames(server);
+        String self = player.getName();
+        List<String> visitable = new ArrayList<String>();
+        for (String name : names) {
+            if (!name.equalsIgnoreCase(self))
+                visitable.add(name);
+        }
+        if (visitable.isEmpty()) {
+            player.sendMessage(new TextComponentString("No visitable islands found."));
+            return;
+        }
+        player.sendMessage(new TextComponentString(TextFormatting.GOLD + "Visitable islands:"));
+        for (String name : visitable) {
+            player.sendMessage(new TextComponentString(TextFormatting.WHITE + "  " + name));
+        }
+        player.sendMessage(new TextComponentString(TextFormatting.GRAY
+                + "Use /" + aliases.get(0) + " visit <name> or /" + aliases.get(0) + " spectate <name>"));
     }
 
     public static void visit(EntityPlayerMP player, String[] args, boolean spectate) throws CommandException {
@@ -210,8 +232,16 @@ public class PlatformCommand extends CommandBase implements ICommand {
         BlockPos visitPos = new BlockPos(isPos.getX() * ConfigOptions.islandSettings.islandDistance,
                 ConfigOptions.islandSettings.islandYLevel, isPos.getY() * ConfigOptions.islandSettings.islandDistance);
 
+        GameType mode;
+        if (spectate)
+            mode = GameType.SPECTATOR;
+        else if (IslandManager.isOperator(player))
+            mode = GameType.SURVIVAL;
+        else
+            mode = GameType.ADVENTURE;
+
         IslandManager.setVisitLoc(player, isPos.getX(), isPos.getY(), spectate);
-        player.setGameType(spectate ? GameType.SPECTATOR : GameType.ADVENTURE);
+        player.setGameType(mode);
         player.connection.setPlayerLocation(visitPos.getX() + 0.5, visitPos.getY(), visitPos.getZ() + 0.5,
                 player.rotationYaw, player.rotationPitch);
     }
@@ -339,13 +369,16 @@ public class PlatformCommand extends CommandBase implements ICommand {
                 + " : Play in one chunk, on one island. Also resets the spawn chunk."
                 + (ConfigOptions.commandSettings.oneChunkCommandAllowed ? ""
                 : TextFormatting.RED
-                + "\n THE COMMAND IS NOT ALLOWED TO BE USED. SET THE CONFIG OPTION TO TRUE.")));
+                  + "\n THE COMMAND IS NOT ALLOWED TO BE USED. SET THE CONFIG OPTION TO TRUE.")));
 
         player.sendMessage(new TextComponentString(TextFormatting.RED + "visit <player>" + TextFormatting.WHITE
-                + " : Visit another player's island in adventure mode."));
+                + " : Visit another player's island in adventure mode (survival if you are an operator). Works while they are offline."));
 
         player.sendMessage(new TextComponentString(TextFormatting.RED + "spectate <player>" + TextFormatting.WHITE
-                + " : Spectate another player's island."));
+                + " : Spectate another player's island. Works while they are offline."));
+
+        player.sendMessage(new TextComponentString(TextFormatting.RED + "list" + TextFormatting.WHITE
+                + " : List player names that have an island you can visit or spectate."));
     }
 
     public static void newPlatform(EntityPlayerMP player, String[] args) throws CommandException {
