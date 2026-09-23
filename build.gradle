@@ -1,58 +1,73 @@
 buildscript {
     repositories {
-        jcenter()
-        maven { url = "http://files.minecraftforge.net/maven" }
+        maven { url = "https://maven.minecraftforge.net" }
+        mavenCentral()
     }
     dependencies {
-        classpath 'net.minecraftforge.gradle:ForgeGradle:2.3-SNAPSHOT'
+        classpath "net.minecraftforge.gradle:ForgeGradle:3.+"
     }
 }
-apply plugin: 'net.minecraftforge.gradle.forge'
 
-version = "1.5.3"
-group= "com.bartz24.voidislandcontrol" // http://maven.apache.org/guides/mini/guide-naming-conventions.html
+apply plugin: "net.minecraftforge.gradle"
+apply plugin: "eclipse"
+apply plugin: "idea"
+
+version = "1.5.4"
+group = "com.bartz24.voidislandcontrol"
 archivesBaseName = "voidislandcontrol"
 
-sourceCompatibility = targetCompatibility = "1.8" // Need this here so eclipse task generates correctly.
-compileJava {
-    sourceCompatibility = targetCompatibility = "1.8"
-}
+sourceCompatibility = targetCompatibility = compileJava.sourceCompatibility = compileJava.targetCompatibility = "1.8"
 
 minecraft {
-    version = "1.12.2-14.23.1.2604"
-    runDir = "run"
-    
-    // the mappings can be changed at any time, and must be in the following format.
-    // snapshot_YYYYMMDD   snapshot are built nightly.
-    // stable_#            stables are built at the discretion of the MCP team.
-    // Use non-default mappings at your own risk. they may not allways work.
-    // simply re-run your setup task after changing the mappings to update your workspace.
-    mappings = "snapshot_20171217"
-    // makeObfSourceJar = false // an Srg named sources jar is made by default. uncomment this to disable.
+    mappings channel: "stable", version: "39-1.12"
+
+    runs {
+        client {
+            workingDirectory project.file("run")
+            property "forge.logging.markers", "SCAN,REGISTRIES,REGISTRYDUMP"
+            property "forge.logging.console.level", "debug"
+        }
+        server {
+            workingDirectory project.file("run")
+            property "forge.logging.markers", "SCAN,REGISTRIES,REGISTRYDUMP"
+            property "forge.logging.console.level", "debug"
+        }
+    }
+}
+
+repositories {
+    maven { url = "https://maven.minecraftforge.net" }
+    mavenCentral()
 }
 
 dependencies {
-    //deobfCompile "com.github.mcjty:compatlayer:1.10-0.2.2"
-	compile files("lib/Botania r1.10-354-deobf.jar")
+    minecraft "net.minecraftforge:forge:1.12.2-14.23.5.2864"
 
+    // local Botania deobf jar you already have
+    implementation files("lib/Botania r1.10-354-deobf.jar")
 }
 
-processResources
-{
-    // this will ensure that this task is redone when the versions change.
-    inputs.property "version", project.version
-    inputs.property "mcversion", project.minecraft.version
-
-    // replace stuff in mcmod.info, nothing else
-    from(sourceSets.main.resources.srcDirs) {
-        include 'mcmod.info'
-                
-        // replace version and mcversion
-        expand 'version':project.version, 'mcversion':project.minecraft.version
+jar {
+    manifest {
+        attributes([
+                "Specification-Title"     : "voidislandcontrol",
+                "Specification-Vendor"    : "bartz24",
+                "Specification-Version"   : "1",
+                "Implementation-Title"    : project.name,
+                "Implementation-Version"  : project.version,
+                "Implementation-Vendor"   : "bartz24",
+                "Implementation-Timestamp": new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")
+        ])
     }
-        
-    // copy everything else, thats not the mcmod.info
+}
+
+processResources {
+    inputs.property "version", project.version
     from(sourceSets.main.resources.srcDirs) {
-        exclude 'mcmod.info'
+        include "mcmod.info"
+        expand "version": project.version, "mcversion": "1.12.2"
+    }
+    from(sourceSets.main.resources.srcDirs) {
+        exclude "mcmod.info"
     }
 }
