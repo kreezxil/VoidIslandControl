@@ -20,7 +20,17 @@ public class WorldTypeVoid extends WorldType {
     public WorldTypeVoid() {
         super("voidworld");
         if (ConfigOptions.worldGenSettings.worldGenType == WorldGenType.WORLDTYPE)
-            overridenWorldType = WorldType.parseWorldType(ConfigOptions.worldGenSettings.worldGenSpecialParameters);
+            overridenWorldType = findWorldType(ConfigOptions.worldGenSettings.worldGenSpecialParameters);
+    }
+
+    private static WorldType findWorldType(String name) {
+        if (name == null || name.isEmpty())
+            return null;
+        for (WorldType type : WorldType.WORLD_TYPES) {
+            if (type != null && type.getName().equalsIgnoreCase(name))
+                return type;
+        }
+        return null;
     }
 
     public boolean hasInfoNotice() {

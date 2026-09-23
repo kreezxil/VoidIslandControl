@@ -48,7 +48,7 @@ public class StructureLoader {
 
             if (template == null) {
                 template = new Template();
-                this.templates.put(id.getResourcePath(), template);
+                this.templates.put(id.getPath(), template);
             }
 
             return template;
@@ -56,7 +56,7 @@ public class StructureLoader {
 
         @Nullable
         public Template get(@Nullable MinecraftServer server, ResourceLocation templatePath) {
-            String s = templatePath.getResourcePath();
+            String s = templatePath.getPath();
 
             if (this.templates.containsKey(s)) {
                 return this.templates.get(s);
@@ -73,7 +73,7 @@ public class StructureLoader {
          * If it isn't there then it attempts to take it from the minecraft jar.
          */
         public boolean readTemplate(ResourceLocation server) {
-            String s = server.getResourcePath();
+            String s = server.getPath();
             File file1 = new File(this.baseFolder, s + ".nbt");
 
             if (!file1.exists()) {
@@ -100,8 +100,8 @@ public class StructureLoader {
          * reads a template from the minecraft jar
          */
         private boolean readTemplateFromJar(ResourceLocation id) {
-            String s = id.getResourceDomain();
-            String s1 = id.getResourcePath();
+            String s = id.getNamespace();
+            String s1 = id.getPath();
             InputStream inputstream = null;
             boolean flag;
 
@@ -137,7 +137,7 @@ public class StructureLoader {
          * writes the template to an external folder
          */
         public boolean writeTemplate(@Nullable MinecraftServer server, ResourceLocation id) {
-            String s = id.getResourcePath();
+            String s = id.getPath();
 
             if (server != null && this.templates.containsKey(s)) {
                 File file1 = new File(this.baseFolder);
@@ -173,7 +173,7 @@ public class StructureLoader {
         }
 
         public void remove(ResourceLocation templatePath) {
-            this.templates.remove(templatePath.getResourcePath());
+            this.templates.remove(templatePath.getPath());
         }
     }
 }

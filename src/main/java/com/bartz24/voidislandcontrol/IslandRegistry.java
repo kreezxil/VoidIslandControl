@@ -133,9 +133,8 @@ public class IslandRegistry {
                                 + 1; z++) {
                             BlockPos pos = new BlockPos(spawn.getX() + x, spawn.getY(), spawn.getZ() + z);
                             if (world.getBiome(pos).getTemperature(new BlockPos(pos)) > 1.0F)
-                                world.getChunkFromBlockCoords(pos).getBiomeArray()[(pos.getZ() & 15) << 4
+                                world.getChunk(pos).getBiomeArray()[(pos.getZ() & 15) << 4
                                         | (pos.getX() & 15)] = (byte) Biome.getIdForBiome(Biomes.PLAINS);
-
                             if (x == -(int) Math.floor((float) ConfigOptions.islandSettings.islandSize / 2F) - 1
                                     || x == (int) Math.floor((float) ConfigOptions.islandSettings.islandSize / 2F) + 1
                                     || z == -(int) Math.floor((float) ConfigOptions.islandSettings.islandSize / 2F) - 1
@@ -184,7 +183,7 @@ public class IslandRegistry {
                                 .floor((float) ConfigOptions.islandSettings.islandSize / 2F); z++) {
                             BlockPos pos = new BlockPos(spawn.getX() + x, spawn.getY(), spawn.getZ() + z);
                             if (world.getBiome(pos).getTemperature(new BlockPos(pos)) < 0.5F)
-                                world.getChunkFromBlockCoords(pos).getBiomeArray()[(pos.getZ() & 15) << 4
+                                world.getChunk(pos).getBiomeArray()[(pos.getZ() & 15) << 4
                                         | (pos.getX() & 15)] = (byte) Biome.getIdForBiome(Biomes.PLAINS);
                             if (x == 0 && z == 0 && ConfigOptions.islandSettings.woodSettings.spawnWater)
                                 world.setBlockState(pos.down(3), Blocks.WATER.getDefaultState(), 2);
@@ -248,7 +247,7 @@ public class IslandRegistry {
                 for (int z = zIs
                         - (int) Math.floor((float) ConfigOptions.islandSettings.islandBiomeRange / 2F); z <= zIs
                         + (int) Math.floor((float) ConfigOptions.islandSettings.islandBiomeRange / 2F); z++) {
-                    world.getChunkFromBlockCoords(new BlockPos(x, 64, z))
+                    world.getChunk(new BlockPos(x, 64, z))
                             .getBiomeArray()[(new BlockPos(x, 64, z).getZ() & 15) << 4 | (new BlockPos(x, 64, z).getX()
                             & 15)] = (byte) ConfigOptions.islandSettings.islandBiomeID;
                 }
