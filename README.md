@@ -96,17 +96,43 @@ Default command name is `/island` (configurable).
 | `/island spawn` | Teleport to world spawn `(0, islandY, 0)`. |
 | `/island reset [type]` | New island in a new slot; inventory reset follows config. |
 | `/island onechunk` | One-chunk border mode. Disabled in config by default. |
-| `/island visit <player>` | **Remaster:** go to that player's island. Adventure for normal players, **survival if you are an operator**. |
-| `/island spectate <player>` | **Remaster:** go to that player's island in **spectator** mode (ops included). |
-| `/island list` | **Remaster:** list player names that have an island you can visit or spectate. |
+| `/island visit <player>` | **Remaster:** visible body on that island. Adventure by default; survival if you are an operator **or** you are allowed to harvest/place. |
+| `/island spectate <player>` | **Remaster:** ghost cam on that island (spectator, including ops). |
+| `/island list` | **Remaster:** names that have an island you can visit or spectate. |
+| `/island permission <player> <flag> <true/false>` | **Remaster:** owner-only whitelist flags for that player on **your** island. |
 
-Visit, spectate, and list:
+Visit, spectate, list, and permissions:
 
-- Work while the target player is **online or offline**, as long as they have an island in VIC save data and the server can resolve their name to a UUID (usercache or Mojang lookup on online-mode servers).
-- `/island list` prints those names (except yourself). Tab complete on visit / spectate uses the same list.
+- Visit / spectate work while the target is **online or offline** if VIC has their island UUID and the name resolves (`usercache.json` / `usernamecache.json`).
+- `/island list` prints those names (except yourself). Tab complete uses the same list.
 - You cannot visit / spectate your own island (`/island home` is that).
-- Going too far from the visited island, or using `/island home` / `/island spawn` / create / join / leave, drops visit state and puts you back in survival.
+- A visitor is a **visible player** so the host can give a tour. Spectator stays the invisible cam.
+- Default visit is walk-and-talk only. Chests, machines, items, entities, combat, pickups, harvest, and place are all **off** until a pack dev or an island owner turns them on.
+- `/island home` / `spawn` / create / join / leave ends the visit and returns survival.
 - `allowVisitCommand` disables visit and spectate. List still works.
+- `allowPerPlayerOverrides` (aka the whitelist) must be **true** or `/island permission` does nothing. Overrides are stored on the **island**, keyed by visitor UUID. Same player can have different flags on different islands. They do not have to have visited first.
+
+**Global visit flags** (`commandSettings.visitSettings`, all default `false`):
+
+| Flag | If true |
+| --- | --- |
+| `allowBlockInteract` | Chests / machines / right-click blocks |
+| `allowItemUse` | Use items |
+| `allowEntityInteract` | Frames, villagers, armor stands |
+| `allowAttack` | Attack entities |
+| `allowPickup` | Pick up items |
+| `allowBlockHarvest` | Break / harvest blocks (visitor is put in survival) |
+| `allowBlockPlace` | Place blocks (visitor is put in survival) |
+| `allowPerPlayerOverrides` | Owners may set the flags above per visitor |
+
+**Island lockdown** (`islandSettings`, default **off**):
+
+| Option | Default | Meaning |
+| --- | --- | --- |
+| `islandLockdown` | `false` | Yank players back and show the “too far” message |
+| `islandLockdownRange` | `500` | Distance from island center that triggers it |
+
+Ops are not leashed. Old `islandProtection` / `protectionBuildRange` still exist for spawn build-protect; the walk-off message is lockdown only.
 
 ### Admin commands
 
@@ -130,9 +156,10 @@ Compared with Bartz24's 1.5.3 line:
 
 - Target **Forge 1.12.2-14.23.5.2864** (Log4j / CVE-2021-44228 patched; do not ship pre-2856 Forge on a public pack).
 - Build moved from ForgeGradle 2.3 to **ForgeGradle 3** (`userdev3`), mappings `stable_39` / `39-1.12`, Java 8, Gradle wrapper 4.9.
-- `/island visit` is adventure for normal players, survival for operators.
-- New `/island spectate` (spectator, including operators).
-- New `/island list` — names of players who have a visitable island.
+- `/island visit` is a visible body: adventure, or survival for ops / harvest-place perms.
+- New `/island spectate`, `/island list`, `/island permission`.
+- Per-island visit whitelist (seven flags + harvest/place). Global defaults all false.
+- Island lockdown config, off by default.
 - Visit and spectate resolve offline players by UUID.
 - Mapping-name updates so the old snapshot MCP calls compile on this toolchain (`getPath` / `getNamespace`, `getChunk`, local `WorldType` lookup).
 - Garden of Glass support still compiles against Botania when that dependency is on the FG3 classpath (`fg.deobf`).
@@ -153,8 +180,8 @@ Install the jar on **client and server**.
 3. Join. Use `/island create` unless auto-create is on.
 4. Invite teammates with `/island invite`.
 5. See who you can visit: `/island list`.
-6. Visit an island: `/island visit <name>` (adventure, or survival if you are an op).
-7. Spectate an island: `/island spectate <name>`.
+6. Visit: `/island visit <name>`. Spectate: `/island spectate <name>`.
+7. Owner whitelist: `/island permission <name> allowBlockHarvest true` (requires `allowPerPlayerOverrides`).
 
 Custom structures: save with a structure block, copy the `.nbt` into `config/voidislandcontrolstructures/`, add the name to the Custom Islands list, mark spawn with data `spawn_point`.
 

@@ -43,7 +43,7 @@ public class ConfigOptions {
 		}
 	}
 
-	@Config.Comment("Config Settings for the world generation")
+	@Config.Comment("Config Settings for the islands")
 	public static IslandSettings islandSettings = new IslandSettings();
 
 	public static class IslandSettings {
@@ -98,6 +98,7 @@ public class ConfigOptions {
 		public boolean islandLockdown = false;
 		@Config.Comment("Distance from island center that triggers lockdown. Only used when islandLockdown is true")
 		public int islandLockdownRange = 500;
+
 		@Config.Comment("Settings for the grass island")
 		public GrassIslandSettings grassSettings = new GrassIslandSettings();
 
@@ -175,12 +176,7 @@ public class ConfigOptions {
 		}
 	}
 
-	@Config.Comment("If true, players are pulled back when they wander too far from their island (or the island they are visiting) and are shown the lockdown message")
-	public boolean islandLockdown = false;
-	@Config.Comment("Distance from island center that triggers lockdown. Only used when islandLockdown is true")
-	public int islandLockdownRange = 500;
-
-	@Config.Comment("Config Settings for the world generation")
+	@Config.Comment("Config Settings for commands")
 	public static CommandSettings commandSettings = new CommandSettings();
 
 	public static class CommandSettings {
@@ -212,6 +208,29 @@ public class ConfigOptions {
 		public boolean allowVisitCommand = true;
 		@Config.Comment("Allows the home command to be used")
 		public boolean allowHomeCommand = true;
+
+		@Config.Comment("What a visiting (non-op) player may do. All false = walk and talk only. Ops on visit stay survival and ignore these.")
+		public VisitSettings visitSettings = new VisitSettings();
+
+		public static class VisitSettings {
+			@Config.Comment("Allow visitors to right-click blocks and machines (chests, furnaces, etc.)")
+			public boolean allowBlockInteract = false;
+			@Config.Comment("Allow visitors to use items in the air / on blocks")
+			public boolean allowItemUse = false;
+			@Config.Comment("Allow visitors to interact with entities (item frames, villagers, armor stands)")
+			public boolean allowEntityInteract = false;
+			@Config.Comment("Allow visitors to attack entities")
+			public boolean allowAttack = false;
+			@Config.Comment("Allow visitors to pick up items")
+			public boolean allowPickup = false;
+			@Config.Comment("aka the whitelist. If true, island owners can set per-player visit flags with /island permission. Players with no override still use the flags above.")
+			public boolean allowPerPlayerOverrides = false;
+			@Config.Comment("Allow visitors to harvest/break blocks")
+			public boolean allowBlockHarvest = false;
+			@Config.Comment("Allow visitors to place blocks")
+			public boolean allowBlockPlace = false;
+		}
+
 		@Config.Comment("Command for the command block to run")
 		public String commandBlockCommand = "";
 		@Config.Comment("Command Block direction to face")
@@ -222,22 +241,6 @@ public class ConfigOptions {
 		public enum CommandBlockType {
 			NONE, IMPULSE, REPEATING, CHAIN
 		}
-	}
-
-	@Config.Comment("What a visiting (non-op) player may do. All false = walk and talk only. Ops on visit stay survival and ignore these.")
-	public VisitSettings visitSettings = new VisitSettings();
-
-	public static class VisitSettings {
-		@Config.Comment("Allow visitors to right-click blocks and machines (chests, furnaces, etc.)")
-		public boolean allowBlockInteract = false;
-		@Config.Comment("Allow visitors to use items in the air / on blocks")
-		public boolean allowItemUse = false;
-		@Config.Comment("Allow visitors to interact with entities (item frames, villagers, armor stands)")
-		public boolean allowEntityInteract = false;
-		@Config.Comment("Allow visitors to attack entities")
-		public boolean allowAttack = false;
-		@Config.Comment("Allow visitors to pick up items")
-		public boolean allowPickup = false;
 	}
 
 	@Config.Comment("Config Settings for other stuff")

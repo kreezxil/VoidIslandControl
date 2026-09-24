@@ -2,6 +2,7 @@ package com.bartz24.voidislandcontrol;
 
 import com.bartz24.voidislandcontrol.api.IslandManager;
 import com.bartz24.voidislandcontrol.api.IslandPos;
+import com.bartz24.voidislandcontrol.api.VisitPerms;
 import com.bartz24.voidislandcontrol.config.ConfigOptions;
 import com.bartz24.voidislandcontrol.config.ConfigOptions.CommandSettings.CommandBlockType;
 import com.bartz24.voidislandcontrol.world.WorldTypeVoid;
@@ -39,8 +40,6 @@ import net.minecraftforge.fml.relauncher.SideOnly;
 import org.apache.commons.lang3.StringUtils;
 
 import javax.annotation.Nullable;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Random;
 
 public class EventHandler {
@@ -199,7 +198,7 @@ public class EventHandler {
         if (player.world.isRemote || !isRestrictedVisitor(player))
             return;
 
-        ConfigOptions.CommandSettings.VisitSettings v = ConfigOptions.commandSettings.visitSettings;
+        VisitPerms v = IslandManager.getEffectiveVisitPerms(player);
         boolean cancel = false;
         if (event instanceof PlayerInteractEvent.RightClickBlock
                 || event instanceof PlayerInteractEvent.LeftClickBlock)
@@ -218,7 +217,7 @@ public class EventHandler {
         EntityPlayer player = event.getEntityPlayer();
         if (player.world.isRemote || !isRestrictedVisitor(player))
             return;
-        if (!ConfigOptions.commandSettings.visitSettings.allowAttack)
+        if (!IslandManager.getEffectiveVisitPerms(player).allowAttack)
             event.setCanceled(true);
     }
 
@@ -227,7 +226,7 @@ public class EventHandler {
         EntityPlayer player = event.getEntityPlayer();
         if (player.world.isRemote || !isRestrictedVisitor(player))
             return;
-        if (!ConfigOptions.commandSettings.visitSettings.allowPickup)
+        if (!IslandManager.getEffectiveVisitPerms(player).allowPickup)
             event.setCanceled(true);
     }
 
@@ -323,10 +322,6 @@ public class EventHandler {
         }
     }
 
-    private static class IslandGenSafe {
-        // placeholder - do not use; see spawnPlat below
-    }
-
     private static void mainSpawn(World world, BlockPos spawn) {
         for (int x = -(int) Math.floor((float) ConfigOptions.islandSettings.islandSize / 2F); x <= (int) Math
                 .floor((float) ConfigOptions.islandSettings.islandSize / 2F); x++) {
@@ -375,7 +370,6 @@ public class EventHandler {
     @SubscribeEvent
     public static PlayerInteractEvent spawnProtection(PlayerInteractEvent event) {
         EntityPlayer player = event.getEntityPlayer();
-        World world = player.getEntityWorld();
 
         if (!ConfigOptions.islandSettings.spawnProtection || Math.abs(player.posX) > ConfigOptions.islandSettings.protectionBuildRange
                 || Math.abs(player.posZ) > ConfigOptions.islandSettings.protectionBuildRange) {
@@ -386,5 +380,23 @@ public class EventHandler {
             }
             return null;
         }
+    }
+
+    @SubscribeEvent
+    public void onVisitBreak(net.minecraftforge.event.world.BlockEvent.BreakEvent event) {
+        EntityPlayer player = event.getPlayer();
+        if (player == null || player.world.isRemote || !isRestrictedVisitor(player))
+            return;
+        if (!IslandManager.getEffectiveVisitPerms(player).allowBlockHarvest)
+            event.setCanceled(true);
+    }
+
+    @SubscribeEvent
+    public void onVisitPlace(net.minecraftforge.event.world.BlockEvent.PlaceEvent event) {
+        EntityPlayer player = event.getPlayer();
+        if (player == null || player.world.isRemote || !isRestrictedVisitor(player))
+            return;
+        if (!IslandManager.getEffectiveVisitPerms(player).allowBlockPlace)
+            event.setCanceled(true);
     }
 }

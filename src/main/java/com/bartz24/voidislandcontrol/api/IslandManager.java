@@ -359,9 +359,26 @@ public class IslandManager {
 
     public static GameType getVisitGameType(EntityPlayer player) {
         if (isVisitSpectate(player))
-            return net.minecraft.world.GameType.SPECTATOR;
+            return GameType.SPECTATOR;
         if (isOperator(player))
-            return net.minecraft.world.GameType.SURVIVAL;
-        return net.minecraft.world.GameType.ADVENTURE;
+            return GameType.SURVIVAL;
+        VisitPerms p = getEffectiveVisitPerms(player);
+        if (p.allowBlockHarvest || p.allowBlockPlace)
+            return GameType.SURVIVAL;
+        return GameType.ADVENTURE;
+    }
+
+    public static VisitPerms getEffectiveVisitPerms(EntityPlayer visitor) {
+        VisitPerms global = VisitPerms.fromConfig();
+        if (!com.bartz24.voidislandcontrol.config.ConfigOptions.commandSettings.visitSettings.allowPerPlayerOverrides)
+            return global;
+        IslandPos loc = getVisitLoc(visitor);
+        if (loc == null)
+            return global;
+        IslandPos island = getIslandAtPos(loc.getX(), loc.getY());
+        if (island == null)
+            return global;
+        VisitPerms over = island.getVisitPerms(visitor.getGameProfile().getId());
+        return over != null ? over : global;
     }
 }

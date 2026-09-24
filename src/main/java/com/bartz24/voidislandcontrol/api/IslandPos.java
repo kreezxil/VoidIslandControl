@@ -14,7 +14,7 @@ public class IslandPos {
 	private int posX;
 	private int posY;
 	private String type;
-
+	private java.util.HashMap<String, VisitPerms> visitPerms = new java.util.HashMap<String, VisitPerms>();
 	private ArrayList<String> playerUUIDs;
 
 	public IslandPos(int x, int y, UUID... ids) {
@@ -81,6 +81,14 @@ public class IslandPos {
 			list.appendTag(stackTag);
 		}
 		nbt.setTag("UUIDs", list);
+
+		NBTTagList permList = new NBTTagList();
+		for (java.util.Map.Entry<String, VisitPerms> e : visitPerms.entrySet()) {
+			NBTTagCompound tag = e.getValue().write();
+			tag.setString("playerUUID", e.getKey());
+			permList.appendTag(tag);
+		}
+		nbt.setTag("VisitPerms", permList);
 	}
 
 	public void readFromNBT(NBTTagCompound nbt) {
@@ -97,5 +105,29 @@ public class IslandPos {
 			String name = stackTag.getString("playerUUID");
 			playerUUIDs.add(name);
 		}
+
+		visitPerms = new java.util.HashMap<String, VisitPerms>();
+		NBTTagList permList = nbt.getTagList("VisitPerms", Constants.NBT.TAG_COMPOUND);
+		for (int i = 0; i < permList.tagCount(); i++) {
+			NBTTagCompound tag = permList.getCompoundTagAt(i);
+			visitPerms.put(tag.getString("playerUUID"), VisitPerms.read(tag));
+		}
+	}
+
+	public VisitPerms getVisitPerms(UUID visitor) {
+		return visitPerms.get(visitor.toString());
+	}
+
+	public VisitPerms getOrCreateVisitPerms(UUID visitor) {
+		VisitPerms p = visitPerms.get(visitor.toString());
+		if (p == null) {
+			p = VisitPerms.fromConfig();
+			visitPerms.put(visitor.toString(), p);
+		}
+		return p;
+	}
+
+	public void setVisitPerm(UUID visitor, String flag, boolean value) {
+		getOrCreateVisitPerms(visitor).set(flag, value);
 	}
 }
