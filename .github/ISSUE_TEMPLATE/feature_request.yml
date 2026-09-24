@@ -1,0 +1,105 @@
+name: Feature request
+description: Ask for a new command, config, or behavior in this remaster.
+title: "[Feature] "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Request something this remaster does not do yet.
+
+        Already shipped in the remaster (do not request these unless you want them changed):
+        visit vs spectate, offline visit, `/island list`, visit permission whitelist,
+        harvest/place visit flags, island lockdown, Forge 1.12.2-14.23.5.2864.
+
+        This project stays on **1.12.2 Forge**. Port requests to newer MC belong in a separate discussion, not this form.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What is painful or missing today? Who hits it (player, owner, pack dev, admin)?
+      placeholder: Island owners cannot see which visit flags they already set on a player.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: Concrete command, config key, or behavior. Defaults matter.
+      placeholder: |
+        /island permission <player> with no extra args prints that player's flags on my island.
+        Default remains "no listing needed to visit, walk-only unless flags are set."
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives you already tried
+      description: Config flags, existing commands, datapacks, other mods. "None" is fine.
+      placeholder: Using /islandAdmin list and remembering UUIDs by hand.
+
+  - type: dropdown
+    id: audience
+    attributes:
+      label: Who is this for
+      multiple: true
+      options:
+        - Island owner
+        - Visiting player
+        - Server admin / op
+        - Pack developer
+        - Singleplayer
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Visit / spectate / list
+        - Visit permissions / whitelist
+        - Island lockdown
+        - Commands
+        - Config
+        - World gen / island types
+        - Admin tools
+        - Performance / save data
+        - Docs
+        - Other
+    validations:
+      required: true
+
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Scope you are asking for
+      options:
+        - Config toggle only
+        - New or changed command
+        - New save-data field
+        - Behavior change with a default that keeps current worlds safe
+        - Docs only
+        - Not sure
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: constraints
+    attributes:
+      label: Constraints (check all that apply)
+      options:
+        - label: Must stay compatible with existing VIC world saves
+        - label: Default should stay off / conservative (walk-only visit, lockdown off, etc.)
+        - label: Must work while the other player is offline
+        - label: Must work on a dedicated server
+        - label: I can test a build if you tag me
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: Extra context
+      description: Mock command output, similar mods, screenshots, pack rules this has to fit.

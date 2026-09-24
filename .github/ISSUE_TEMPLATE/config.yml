@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Original Void Island Control (Bartz24)
+    url: https://www.curseforge.com/minecraft/mc-mods/void-island-control
+    about: Upstream project this remaster is based on.
+  - name: Remaster source
+    url: https://github.com/kreezxil/VoidIslandControl
+    about: Code, README, and changelog for this fork.

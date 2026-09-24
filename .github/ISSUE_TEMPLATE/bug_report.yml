@@ -1,0 +1,177 @@
+name: Bug report
+description: Something is broken in Void Island Control Remastered.
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this form for crashes, commands that fail, visit/spectate problems, save-data issues, and anything else that is not working.
+
+        This remaster is **Minecraft 1.12.2 + Forge only**. Do not file 1.16+ / Fabric / NeoForge tickets here.
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: What happened
+      description: One or two sentences. What you were doing and what went wrong.
+      placeholder: /island visit Notorious_78 put me in adventure but I could still open chests.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+      placeholder: Visitor should not be able to open inventories unless allowBlockInteract is true.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Numbered steps another person can follow on a fresh or copied world.
+      placeholder: |
+        1. Join a voidworld dedicated server with VIC Remastered 1.5.4
+        2. /island create grass
+        3. Second account runs /island visit <owner>
+        4. Right-click a chest on the island
+      value: |
+        1.
+        2.
+        3.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: environment
+    attributes:
+      label: Where it happened
+      options:
+        - Dedicated server
+        - Singleplayer / integrated server
+        - LAN
+        - Not sure
+    validations:
+      required: true
+
+  - type: input
+    id: mc_version
+    attributes:
+      label: Minecraft version
+      description: Should be 1.12.2.
+      placeholder: 1.12.2
+    validations:
+      required: true
+
+  - type: input
+    id: forge_version
+    attributes:
+      label: Forge version
+      description: Full build, e.g. 14.23.5.2864. Pre-2856 builds are not supported (Log4j).
+      placeholder: 14.23.5.2864
+    validations:
+      required: true
+
+  - type: input
+    id: vic_version
+    attributes:
+      label: Void Island Control Remastered version
+      description: Jar name or version from the filename / mcmod.info (e.g. 1.5.4).
+      placeholder: 1.5.4
+    validations:
+      required: true
+
+  - type: dropdown
+    id: loader
+    attributes:
+      label: Mod loader
+      options:
+        - Forge
+        - Other (explain below)
+    validations:
+      required: true
+
+  - type: input
+    id: java_version
+    attributes:
+      label: Java version
+      description: java -version on the machine that ran the world (server if dedicated).
+      placeholder: 1.8.0_xxx
+    validations:
+      required: true
+
+  - type: input
+    id: pack
+    attributes:
+      label: Pack or instance name
+      description: Modpack name + version, or "none / custom instance".
+      placeholder: Custom 1.12.2 instance / Pack name 1.2.3
+
+  - type: dropdown
+    id: world_type
+    attributes:
+      label: World type
+      options:
+        - voidworld / Void? World
+        - Other (this remaster only manages islands in voidworld)
+        - Not sure
+    validations:
+      required: true
+
+  - type: dropdown
+    id: related
+    attributes:
+      label: Feature area
+      multiple: true
+      options:
+        - Visit
+        - Spectate
+        - /island list
+        - /island permission (whitelist)
+        - Island lockdown
+        - Create / reset / home / spawn
+        - Invite / join / leave / kick
+        - Admin commands
+        - World gen / island types / GoG
+        - Config
+        - Save data / copied world
+        - Crash on start or join
+        - Other
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: extras
+    attributes:
+      label: Also in play
+      options:
+        - label: Botania is installed
+        - label: Garden of Glass is installed
+        - label: This world was copied from another server
+        - label: I copied usercache.json and usernamecache.json with the world
+        - label: I am an operator / have cheats
+        - label: allowPerPlayerOverrides is enabled
+        - label: islandLockdown is enabled
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: |
+        Paste or attach **latest.log** from the same side that failed (server `logs/latest.log` for dedicated, instance logs for singleplayer).
+        If it crashed, also attach the crash report from `crash-reports/`.
+        Do not paste a 10k-line log into the first line of the ticket — use a gist or attach the file if it is huge.
+      placeholder: |
+        Link to gist / pastebin, or paste the error + 30 lines of context.
+
+        latest.log excerpt:
+    validations:
+      required: true
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else
+      description: Screenshots, config snippets (visitSettings, lockdown), /islandAdmin list output, UUID vs name confusion, etc.
