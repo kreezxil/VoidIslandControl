@@ -5,7 +5,8 @@ import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.WorldGenRegion;
-import net.minecraft.world.level.LevelHeightAccessor;
+import com.bartz24.voidislandcontrol.config.VicConfig;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.NoiseColumn;
 import net.minecraft.world.level.StructureManager;
 import net.minecraft.world.level.WorldGenLevel;
@@ -18,6 +19,7 @@ import net.minecraft.world.level.levelgen.GenerationStep;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.levelgen.RandomState;
 import net.minecraft.world.level.levelgen.blending.Blender;
+import net.minecraft.world.level.LevelHeightAccessor;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -103,6 +105,13 @@ public class VoidChunkGenerator extends ChunkGenerator {
 
     @Override
     public void applyBiomeDecoration(WorldGenLevel level, ChunkAccess chunk, StructureManager structureManager) {
-        if (structures) super.applyBiomeDecoration(level, chunk, structureManager);
+        if (placeStructures(level)) super.applyBiomeDecoration(level, chunk, structureManager);
+    }
+
+    private boolean placeStructures(WorldGenLevel level) {
+        var key = level.getLevel().dimension();
+        if (Level.NETHER.equals(key)) return VicConfig.worldGenSettings.netherVoidStructures;
+        if (Level.END.equals(key)) return VicConfig.worldGenSettings.endVoidStructures;
+        return structures;
     }
 }

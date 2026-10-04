@@ -11,9 +11,9 @@ import net.minecraftforge.registries.RegisterEvent;
 
 @Mod(References.MODID)
 public class VoidIslandControlForge {
-    public VoidIslandControlForge() {
+    public VoidIslandControlForge(FMLJavaModLoadingContext context) {
         CommonInit.init(FMLPaths.CONFIGDIR.get());
-        var modBus = FMLJavaModLoadingContext.get().getModEventBus();
+        var modBus = context.getModEventBus();
         modBus.addListener(this::registerCodec);
         MinecraftForge.EVENT_BUS.addListener(this::registerCommands);
     }
