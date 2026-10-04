@@ -46,10 +46,26 @@ public class EventHandler {
     @SubscribeEvent
     @SideOnly(Side.CLIENT)
     public void onOpenGui(GuiOpenEvent e) {
-        if (e.getGui() instanceof GuiCreateWorld
-                && Minecraft.getMinecraft().currentScreen instanceof GuiWorldSelection) {
-            GuiCreateWorld cw = (GuiCreateWorld) e.getGui();
-            ReflectionHelper.setPrivateValue(GuiCreateWorld.class, cw, getType(), "field_146331_K", "selectedIndex");
+        if (!(e.getGui() instanceof GuiCreateWorld))
+            return;
+        if (!(Minecraft.getMinecraft().currentScreen instanceof GuiWorldSelection))
+            return;
+
+        GuiCreateWorld cw = (GuiCreateWorld) e.getGui();
+        int type = getType();
+        try {
+            ReflectionHelper.setPrivateValue(GuiCreateWorld.class, cw, type,
+                    "field_146331_K", "selectedIndex");
+        } catch (ReflectionHelper.UnableToAccessFieldException ignored) {
+            try {
+                java.lang.reflect.Field f = findWorldTypeField(cw.getClass());
+                if (f != null) {
+                    f.setAccessible(true);
+                    f.setInt(cw, type);
+                }
+            } catch (Throwable t) {
+                // FancyMenu or another GUI overhaul. Skip preselect; do not crash.
+            }
         }
     }
 
@@ -59,6 +75,21 @@ public class EventHandler {
                 return i;
         }
         return 0;
+    }
+
+    private static java.lang.reflect.Field findWorldTypeField(Class<?> clazz) {
+        Class<?> c = clazz;
+        while (c != null && c != Object.class) {
+            java.lang.reflect.Field[] fields = c.getDeclaredFields();
+            for (int i = 0; i < fields.length; i++) {
+                java.lang.reflect.Field f = fields[i];
+                if (f.getType() == int.class
+                        && (f.getName().equals("field_146331_K") || f.getName().equals("selectedIndex")))
+                    return f;
+            }
+            c = c.getSuperclass();
+        }
+        return null;
     }
 
     @SubscribeEvent
