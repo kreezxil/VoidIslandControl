@@ -3,6 +3,7 @@
   "minVersion": "0.8",
   "package": "com.bartz24.voidislandcontrol.mixin",
   "compatibilityLevel": "JAVA_17",
+  "refmap": "voidislandcontrol.refmap.json",
   "mixins": [
     "PlayerListMixin",
     "ServerPlayerMixin",

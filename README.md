@@ -1,6 +1,6 @@
 # Void Island Control for 1.20.1
 
-Multiplayer void-island world control for Minecraft 1.20.1, NeoForge and Fabric. Same feature set as the 1.12.2 remaster: island teams, visit / spectate / list / permissions, starter inventory, custom structure islands, optional void nether and end.
+Multiplayer void-island world control for Minecraft 1.20.1, Forge, NeoForge, and Fabric. Same feature set as the 1.12.2 remaster: island teams, visit / spectate / list / permissions, starter inventory, custom structure islands, optional void nether and end.
 
 Original CurseForge project: https://www.curseforge.com/minecraft/mc-mods/void-island-control
 
@@ -31,7 +31,7 @@ Void Island Control adds a world preset for a customizable, multiplayer void wor
 - Config for bottom blocks, spawn protection, island size and distance, void nether / end with optional structures, one-chunk mode, starter chest, starting inventory, command blocks on new islands, and commands run when the world first loads.
 - Visit / spectate / list / per-island permission flags from the 1.12.2 remaster.
 
-Install the matching jar on the client and the server. NeoForge and Fabric are separate jars. A Fabric client cannot join a NeoForge server.
+Install the matching jar on the client and the server. Forge, NeoForge, and Fabric are separate jars. A Forge client cannot load the NeoForge jar, and a Fabric client cannot join a Forge or NeoForge server.
 
 ### World preset
 

@@ -1,4 +1,4 @@
 {
-  "createWorld.customize.preset.voidislandcontrol/void": "Void Island",
-  "createWorld.customize.preset.voidislandcontrol/void_overworld": "Void Island (overworld only)"
+  "world_preset.voidislandcontrol.void": "Void Island",
+  "world_preset.voidislandcontrol.void_overworld": "Void Island (overworld only)"
 }

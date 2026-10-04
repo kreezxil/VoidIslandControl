@@ -71,6 +71,8 @@ processResources {
             'fabric_loader_version'         : fabric_loader_version,
             'neoforge_version'              : neoforge_version,
             'neoforge_loader_version_range' : neoforge_loader_version_range,
+            'forge_version'                 : forge_version,
+            'forge_loader_version_range'    : forge_loader_version_range,
             'mod_name'                      : mod_name,
             'mod_author'                    : mod_author,
             'mod_id'                        : mod_id,

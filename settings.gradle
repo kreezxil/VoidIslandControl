@@ -24,3 +24,4 @@ rootProject.name = 'VoidIslandControl'
 include('common')
 include('fabric')
 include('neoforge')
+include('forge')
