@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "id": "${mod_id}",
+  "version": "${version}",
+  "name": "${mod_name}",
+  "description": "${description}",
+  "authors": ["Bartz24", "kreezxil"],
+  "contact": {
+    "homepage": "https://www.curseforge.com/minecraft/mc-mods/void-island-control",
+    "sources": "https://github.com/kreezxil/VoidIslandControl"
+  },
+  "license": "${license}",
+  "environment": "*",
+  "entrypoints": {
+    "main": ["com.bartz24.voidislandcontrol.VoidIslandControlFabric"]
+  },
+  "mixins": ["${mod_id}.mixins.json"],
+  "depends": {
+    "fabricloader": ">=0.14",
+    "fabric-api": "*",
+    "minecraft": "${minecraft_version}",
+    "java": ">=17"
+  }
+}

@@ -1,85 +1,76 @@
-# Void Island Control Remastered
+# Void Island Control for 1.20.1
 
-A remaster of **Void Island Control** for Minecraft **1.12.2**.
+Multiplayer void-island world control for Minecraft 1.20.1, NeoForge and Fabric. Same feature set as the 1.12.2 remaster: island teams, visit / spectate / list / permissions, starter inventory, custom structure islands, optional void nether and end.
 
 Original CurseForge project: https://www.curseforge.com/minecraft/mc-mods/void-island-control
 
-Void Island Control adds a world type for a customizable, multiplayer void world. Players create and manage isolated islands, invite teammates, and run skyblock-style play in a void overworld (with optional void nether and end). This remaster keeps that feature set, rebuilds it on Log4j-patched Forge **1.12.2-14.23.5.2864**, and adds visit / spectate / list tools that work while the island owner is offline.
-
 ## License and attribution (GPLv3)
 
-This project is licensed under the **GNU General Public License v3.0**. The full license text is in [`LICENSE.md`](LICENSE.md).
+This project is licensed under the GNU General Public License v3.0 only. The full license text is in [`LICENSE.md`](LICENSE.md). Do not add "or later" to inherited Void Island Control code.
 
 Original work:
 
-- Author: **Bartz24**
+- Author: Bartz24
 - CurseForge: https://www.curseforge.com/minecraft/mc-mods/void-island-control
 - Original source: https://github.com/Bartz24/VoidIslandControl
 
-Remaster:
+Remaster and 1.20.1 port:
 
-- Maintainer: **kreezxil**
+- Maintainer: kreezxil
 - Source: https://github.com/kreezxil/VoidIslandControl
 
-Bartz24's original code and this remaster (including the new visit / spectate work) are both under GPLv3. You may copy, modify, and redistribute this mod under that license. Modified versions must keep the license, keep copyright notices, and mark the changes.
+You may copy, modify, and redistribute this mod under GPLv3. Modified versions must keep the license, keep copyright notices, and mark the changes.
 
 ## What this mod does
 
-(From the original CurseForge description, plus remaster notes.)
-
-Void Island Control adds a world type for a customizable, multiplayer void world. It is meant for isolated islands, teams, and skyblock-style play.
-
-**Original features**
+Void Island Control adds a world preset for a customizable, multiplayer void world. Players create and manage isolated islands, invite teammates, and run skyblock-style play.
 
 - Multiplayer island create, invite, join, leave, kick, home, spawn, reset, and one-chunk mode.
-- Five default island types: Grass, Sand, Snow, Wood, and Garden of Glass (if Botania and Garden of Glass are installed). Each type is configurable.
-- Custom islands from structure-block `.nbt` files in the config folder.
-- Config for fill / bottom blocks, spawn protection, overworld generation mode, cloud / horizon Y, island size and distance, void nether / end with optional structures, one-chunk mode, starter chest, starting inventory, command blocks on new islands, and commands run when the world first loads.
-- Compatible as a starting-island companion for packs that also use Sky Resources (Sky Resources itself was incompatible on 1.10; this remaster is 1.12.2 only).
-- 1.10 / 1.11 originals needed CompatLayer. This remaster does **not** — it is 1.12.2 Forge only.
+- Default island types: Grass, Sand, Snow, Wood, and Garden of Glass. Each type is configurable.
+- Custom islands from structure `.nbt` files in the `config/voidislandcontrolstructures` folder.
+- Config for bottom blocks, spawn protection, island size and distance, void nether / end with optional structures, one-chunk mode, starter chest, starting inventory, command blocks on new islands, and commands run when the world first loads.
+- Visit / spectate / list / per-island permission flags from the 1.12.2 remaster.
 
-**Basic use (same as upstream)**
+Install the matching jar on the client and the server. NeoForge and Fabric are separate jars. A Fabric client cannot join a NeoForge server.
 
-Install the mod on client and server. Pick **Void? World** in singleplayer or set `level-type=voidworld` on a server. Use `/island create [optional type]` unless auto-create is on.
+### World preset
 
-It is a **normal dual-side Forge mod**. The same jar goes on the dedicated server **and** on every client. The Forge handshake will reject a client that does not have it.
+1.20.1 has no world types. Create a world with preset **Void Island** (`voidislandcontrol:void`) or, on a dedicated server, set `level-type=voidislandcontrol:void`.
 
-### World type
+- `voidislandcontrol:void` voids overworld, nether, and end. Nether and end still place structures when the preset's `structures` flag is true (fortresses, end cities) without terrain. That matches `netherVoid`, `endVoid`, `netherVoidStructures`, and `endVoidStructures` defaulting to true.
+- `voidislandcontrol:void_overworld` voids only the overworld. Use this when nether or end should stay vanilla.
 
-- Create a world with type **Void? World** (singleplayer) or `voidworld` (server `level-type`).
-- Overworld generation can be true void, vanilla overworld, superflat, another world type, or customized.
-- Cloud height and horizon height are configurable.
-- Nether and End can each be void, with optional structure generation.
-- Island management runs in a configured base dimension (usually overworld).
+Cloud and horizon values remain in config for pack authors. The 1.20.1 client does not expose the old world-type horizon hook.
+
+Island management runs in `worldGenSettings.baseDimension` (0 overworld, -1 nether, 1 end).
 
 ### Islands
-
-Default types (each can be enabled or disabled in config):
 
 | Type | Notes |
 | --- | --- |
 | Grass | Optional tree; grass / dirt / coarse dirt |
 | Sand | Optional cactus; normal or red sand |
-| Snow | Optional pumpkins and packed-ice "igloo" ring |
+| Snow | Optional pumpkins and packed-ice igloo ring |
 | Wood | Planks of a chosen wood; optional water and string |
-| Garden of Glass (`gog`) | Requires **Botania** and **Garden of Glass** |
+| Garden of Glass (`gog`) | Pebble island. Livingrock, pebble, and water bowl are used when Botania is installed. No hard dependency. |
 
 Also:
 
-- Custom islands from structure-block `.nbt` files in the `voidislandcontrolstructures` config folder. Add the file name to the Custom Islands list. A structure block data tag `spawn_point` sets the landing block.
+- Custom islands from `.nbt` files in `config/voidislandcontrolstructures`. Add the file name (without `.nbt`) to `customIslands`.
 - Main spawn island at grid `0,0` can use bedrock, a named type, or random.
 - Player islands can use a fixed type or random.
-- Island size, Y level, distance between islands, bottom block (bedrock or the island's secondary block), optional starter chest.
-- Optional biome paint on the island and a range around it.
-- Spawn protection and a build-range that keeps visitors from wandering off the island they are visiting.
+- Island size, Y level, distance, bottom block (bedrock or the island's secondary block), optional starter chest.
+- Spawn protection and a build range that keeps players on their own island.
 - Auto-create islands for new players (all worlds, or dedicated servers only).
 - One-chunk mode (world border 16 blocks) if enabled in config or by command.
-- Optional command block under new islands (impulse / repeating / chain, facing, auto, command string).
+- Optional command block under new islands (impulse / repeating / chain, auto, command string).
 - Commands run once when the world first loads.
 - Starting inventory via `/startingInv` and config `startingItems`.
-- Resist / fire resist / regen buffs on island teleport, duration configurable.
+- Resistance, fire resistance, and regeneration on island teleport.
 
-Island membership is stored in the **world save** as UUIDs (`VoidIslandControlSaveData`). That is separate from `usercache.json` / `usernamecache.json`. Those caches are only used to turn a typed player name into a UUID.
+Island membership is stored in the world save as UUIDs (`vic_data`). Names resolve through the server profile cache, so visit works while the owner is offline.
+
+1.12.2 worlds cannot be opened on 1.20.1. This is a new-world port.
 
 ### Player commands
 
@@ -88,31 +79,30 @@ Default command name is `/island` (configurable).
 | Command | What it does |
 | --- | --- |
 | `/island create [type]` | Create your island. Optional type name or index. |
-| `/island invite <player>` | Invite another player to your island. |
-| `/island join` | Accept a recent invite. |
+| `/island invite <player>` | Invite another online player to your island. |
+| `/island join` | Accept a recent invite (about 60 seconds). |
 | `/island leave` | Leave the island and go to spawn. Last member must confirm. Inventory clear follows config. |
-| `/island kick <player>` | Owner kicks a member. Their items drop at the owner. |
-| `/island home` | Teleport to your island. Must be far enough away (protection range). |
-| `/island spawn` | Teleport to world spawn `(0, islandY, 0)`. |
-| `/island reset [type]` | New island in a new slot; inventory reset follows config. |
+| `/island kick <player>` | Owner kicks a member. Their items drop. |
+| `/island home` | Teleport to your island. Must be at least `protectionBuildRange` blocks away. |
+| `/island spawn` | Teleport to world spawn. |
+| `/island reset [type]` | New island in a new slot. Inventory reset follows config. |
 | `/island onechunk` | One-chunk border mode. Disabled in config by default. |
-| `/island visit <player>` | **Remaster:** visible body on that island. Adventure by default; survival if you are an operator **or** you are allowed to harvest/place. |
-| `/island spectate <player>` | **Remaster:** ghost cam on that island (spectator, including ops). |
-| `/island list` | **Remaster:** names that have an island you can visit or spectate. |
-| `/island permission <player> <flag> <true/false>` | **Remaster:** owner-only whitelist flags for that player on **your** island. |
+| `/island visit <player>` | Visible body on that island. Adventure by default; survival if you are an operator or allowed to harvest/place. |
+| `/island spectate <player>` | Ghost cam on that island. |
+| `/island list` | Names that have an island you can visit or spectate. |
+| `/island permission <player> <flag> <true/false>` | Owner-only whitelist flags for that player on your island. |
 
 Visit, spectate, list, and permissions:
 
-- Visit / spectate work while the target is **online or offline** if VIC has their island UUID and the name resolves (`usercache.json` / `usernamecache.json`).
-- `/island list` prints those names (except yourself). Tab complete uses the same list.
-- You cannot visit / spectate your own island (`/island home` is that).
-- A visitor is a **visible player** so the host can give a tour. Spectator stays the invisible cam.
-- Default visit is walk-and-talk only. Chests, machines, items, entities, combat, pickups, harvest, and place are all **off** until a pack dev or an island owner turns them on.
+- Visit / spectate work while the target is online or offline if VIC has their island UUID and the name resolves.
+- You cannot visit / spectate your own island.
+- A visitor is a visible player. Spectator stays the invisible cam.
+- Default visit is walk-and-talk only.
 - `/island home` / `spawn` / create / join / leave ends the visit and returns survival.
 - `allowVisitCommand` disables visit and spectate. List still works.
-- `allowPerPlayerOverrides` (aka the whitelist) must be **true** or `/island permission` does nothing. Overrides are stored on the **island**, keyed by visitor UUID. Same player can have different flags on different islands. They do not have to have visited first.
+- `allowPerPlayerOverrides` must be true or `/island permission` does nothing. Overrides are stored on the island, keyed by visitor UUID.
 
-**Global visit flags** (`commandSettings.visitSettings`, all default `false`):
+Global visit flags (`commandSettings.visitSettings`, all default false):
 
 | Flag | If true |
 | --- | --- |
@@ -125,14 +115,14 @@ Visit, spectate, list, and permissions:
 | `allowBlockPlace` | Place blocks (visitor is put in survival) |
 | `allowPerPlayerOverrides` | Owners may set the flags above per visitor |
 
-**Island lockdown** (`islandSettings`, default **off**):
+Island lockdown (`islandSettings`, default off):
 
 | Option | Default | Meaning |
 | --- | --- | --- |
-| `islandLockdown` | `false` | Yank players back and show the “too far” message |
-| `islandLockdownRange` | `500` | Distance from island center that triggers it |
+| `islandLockdown` | false | Yank players back and show the too-far message |
+| `islandLockdownRange` | 500 | Distance from island center that triggers it |
 
-Ops are not leashed. Old `islandProtection` / `protectionBuildRange` still exist for spawn build-protect; the walk-off message is lockdown only.
+Ops are not leashed.
 
 ### Admin commands
 
@@ -148,85 +138,18 @@ Ops are not leashed. Old `islandProtection` / `protectionBuildRange` still exist
 
 ### Other command
 
-`/startingInv` — capture or manage the starting inventory used for new / reset players (see in-game usage).
+`/startingInv` (permission level 2) captures your inventory into `startingItems`. Item form is `namespace:path*count` or `namespace:path{snbt}*count`. 1.20.1 has no item metadata.
 
-## Remaster changes
+### Config
 
-Compared with Bartz24's 1.5.3 line:
+`config/voidislandcontrol.json` is written on first launch. Keys match the 1.12.2 remaster. `worldGenType` is kept so old pack configs still parse; the 1.20.1 world is selected with the preset, not that string.
 
-- Target **Forge 1.12.2-14.23.5.2864** (Log4j / CVE-2021-44228 patched; do not ship pre-2856 Forge on a public pack).
-- Build moved from ForgeGradle 2.3 to **ForgeGradle 3** (`userdev3`), mappings `stable_39` / `39-1.12`, Java 8, Gradle wrapper 4.9.
-- `/island visit` is a visible body: adventure, or survival for ops / harvest-place perms.
-- New `/island spectate`, `/island list`, `/island permission`.
-- Per-island visit whitelist (seven flags + harvest/place). Global defaults all false.
-- Island lockdown config, off by default.
-- Visit and spectate resolve offline players by UUID.
-- Mapping-name updates so the old snapshot MCP calls compile on this toolchain (`getPath` / `getNamespace`, `getChunk`, local `WorldType` lookup).
-- Garden of Glass support still compiles against Botania when that dependency is on the FG3 classpath (`fg.deobf`).
+### Addon API
 
-## Requirements
+`com.bartz24.voidislandcontrol.api.IslandManager` and `VicEvents` are the shared API. Register listeners on `VicEvents.CREATE`, `INVITE`, `LEAVE`, `HOME`, `RESET`, `VISIT`, and `SPAWN`. The bus is loader-neutral.
 
-- Minecraft **1.12.2**
-- Forge **14.23.5.2864** (or another 1.12.2 Forge **≥ 14.23.5.2856** if you knowingly change the pin)
-- Java **8** to run and to build
-- Optional: Botania + Garden of Glass for the `gog` island
+### 1.20.1 notes
 
-Install the jar on **client and server**.
-
-## Playing
-
-1. Drop the jar into `mods` on the server and on each client.
-2. Set the world type to `voidworld` (server.properties `level-type=voidworld`) or pick **Void? World** in the create-world screen.
-3. Join. Use `/island create` unless auto-create is on.
-4. Invite teammates with `/island invite`.
-5. See who you can visit: `/island list`.
-6. Visit: `/island visit <name>`. Spectate: `/island spectate <name>`.
-7. Owner whitelist: `/island permission <name> allowBlockHarvest true` (requires `allowPerPlayerOverrides`).
-
-Custom structures: save with a structure block, copy the `.nbt` into `config/voidislandcontrolstructures/`, add the name to the Custom Islands list, mark spawn with data `spawn_point`.
-
-## Building from source
-
-JDK 8 only. Gradle wrapper 4.9.
-
-```bash
-export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
-export PATH="$JAVA_HOME/bin:$PATH"
-./gradlew --version    # Gradle 4.9, Java 1.8
-./gradlew build
-```
-
-There is no `setupDecompWorkspace` on ForgeGradle 3. Use `./gradlew genIntellijRuns` after a successful resolve if you want IDEA run configs.
-
-Botania is pulled with CurseMaven + `fg.deobf`, or a local jar remapped with `fg.deobf(file("libs/Botania-r1.10-363.jar"))`. Do not use a pre-deobfed snapshot jar from the FG 2.3 era.
-
-## Pack notes
-
-- Pin Forge to **2864** (or at least **2856+**) so the Log4j hole is closed.
-- VIC save data survives usercache wipes. Command names may not, until the cache or Mojang can resolve the name again.
-- Offline-mode servers can only resolve names that already exist in usercache unless the player is online.
-
-## Copying a world to another server
-
-Island membership lives **in the world** (`world/data/`, VIC save, UUIDs).  
-Player **names** do not. Those live next to the server jar:
-
-- `usercache.json` (vanilla)
-- `usernamecache.json` (Forge)
-
-If you copy only the world folder onto a test or new host, `/islandAdmin list` will still show every island and UUID. `/island list`, `/island visit <name>`, and `/island spectate <name>` will only show names the new server has already seen. Everyone else looks “missing” even though the island is there.
-
-When you clone a world:
-
-1. Copy the world folder.
-2. Copy `usercache.json` and `usernamecache.json` from the **old server root** (same directory as the Forge jar) into the **new server root**.
-3. Restart the new server.
-
-Do not put those two JSON files only inside the world folder. They will be ignored.
-
-## Credits
-
-- **Bartz24** — original Void Island Control
-- Forge / FML / MCP
-- Vazkii / williewillus — Botania and Garden of Glass (optional island type)
-- kreezxil — remaster, FG3 port, visit / spectate / list, offline visit, op-survival visit
+- Two jars: NeoForge (`neoforge`) and Fabric (`fabric`). There is no Forge loader build.
+- Layout follows the MultiLoader template: shared code in `common`, loader entry points in `neoforge` and `fabric`.
+- Garden of Glass no longer calls Botania internals. The pebble is placed by this mod. Botania items are used only if that mod is present.
