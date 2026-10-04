@@ -8,6 +8,7 @@ import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.saveddata.SavedData;
+
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.util.function.Function;
@@ -35,6 +36,7 @@ public class VicSavedData extends SavedData {
             throw new IllegalStateException("Cannot load vic_data", e);
         }
     }
+
     public VicSavedData() {
     }
 

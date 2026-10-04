@@ -4,11 +4,10 @@ import com.bartz24.voidislandcontrol.References;
 import com.bartz24.voidislandcontrol.api.IslandGen;
 import com.bartz24.voidislandcontrol.api.IslandManager;
 import com.bartz24.voidislandcontrol.config.VicConfig;
+import com.bartz24.voidislandcontrol.platform.StructureNbt;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.NbtAccounter;
-import net.minecraft.nbt.NbtIo;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.RandomSource;
@@ -194,23 +193,11 @@ public final class IslandPlacer {
         }
     }
 
-    private static NbtAccounter accounter() {
-        try {
-            return NbtAccounter.class.getConstructor(long.class, int.class).newInstance(0x20000000L, 512);
-        } catch (ReflectiveOperationException ignored) {
-            try {
-                return NbtAccounter.class.getConstructor(long.class).newInstance(0x20000000L);
-            } catch (ReflectiveOperationException e) {
-                throw new IllegalStateException("Cannot build NbtAccounter", e);
-            }
-        }
-    }
-
     public static void placeStructure(ServerLevel level, BlockPos spawn, String name) {
         Path file = structureDir(level).resolve(name + ".nbt");
         if (!Files.exists(file)) return;
         try (InputStream in = Files.newInputStream(file)) {
-            CompoundTag tag = NbtIo.readCompressed(in, accounter());
+            CompoundTag tag = StructureNbt.INSTANCE.read(in);
             StructureTemplate template = new StructureTemplate();
             template.load(level.holderLookup(net.minecraft.core.registries.Registries.BLOCK), tag);
             BlockPos origin = spawn.offset(-template.getSize().getX() / 2, -2, -template.getSize().getZ() / 2);
@@ -234,3 +221,4 @@ public final class IslandPlacer {
         return BuiltInRegistries.BLOCK.get(rl).defaultBlockState();
     }
 }
+
