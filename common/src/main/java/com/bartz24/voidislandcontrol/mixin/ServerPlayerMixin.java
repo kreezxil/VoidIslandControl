@@ -34,11 +34,5 @@ class ServerPlayerGameModeMixin {
         if (Protection.denyBreak(player, pos)) cir.setReturnValue(false);
     }
 
-    @Inject(method = "useItemOn", at = @At("HEAD"), cancellable = true)
-    private void vic$use(ServerPlayer player, Level level, ItemStack stack, InteractionHand hand, BlockHitResult hit,
-                         CallbackInfoReturnable<InteractionResult> cir) {
-        if (Protection.denyUse(player, hit.getBlockPos(), stack) || Protection.denyPlace(player, hit.getBlockPos())) {
-            cir.setReturnValue(InteractionResult.FAIL);
-        }
-    }
+
 }

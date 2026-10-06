@@ -1,5 +1,6 @@
 package com.bartz24.voidislandcontrol;
 
+import com.bartz24.voidislandcontrol.api.IslandManager;
 import com.bartz24.voidislandcontrol.logic.SpawnHandler;
 import com.bartz24.voidislandcontrol.world.VoidChunkGenerator;
 import net.minecraft.core.registries.Registries;
@@ -41,11 +42,19 @@ public class VoidIslandControlNeo {
     private void onPlayerTick(TickEvent.PlayerTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
         if (!(event.player instanceof ServerPlayer player)) return;
-        if (player.tickCount != 1) return;
-        if (!(player.serverLevel().getChunkSource().getGenerator() instanceof com.bartz24.voidislandcontrol.world.VoidChunkGenerator))
+        ServerLevel level = player.serverLevel();
+        if (!(level.getChunkSource().getGenerator() instanceof VoidChunkGenerator)) return;
+        if (player.tickCount == 1) {
+            level.getChunk(0, 0);
+            if (level.getBlockState(new BlockPos(0, VicConfig.islandSettings.islandYLevel - 3, 0)).isAir()) {
+                IslandManager.currentIslands.clear();
+            }
+            SpawnHandler.ensureSpawnIsland(level);
             return;
+        }
+        if (player.tickCount != 40) return;
         int y = VicConfig.islandSettings.islandYLevel - 2;
-        player.teleportTo(player.serverLevel(), 0.5, y, 0.5, player.getYRot(), player.getXRot());
+        player.teleportTo(level, 0.5, y, 0.5, player.getYRot(), player.getXRot());
     }
 
     private void onLogin(PlayerEvent.PlayerLoggedInEvent event) {

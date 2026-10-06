@@ -1,0 +1,116 @@
+# Void Island Control. Forge, NeoForge, and Fabric all use config/voidislandcontrol.toml
+# Lines starting with # are comments. Restart after edits. Delete this file to regenerate defaults.
+# Create the world with the Void Island preset, or set level-type=voidislandcontrol:void on a dedicated server.
+
+[worldGenSettings]
+# Void the nether. Fortresses still place when netherVoidStructures is true.
+netherVoid = true
+netherVoidStructures = true
+# Void the end. End cities still place when endVoidStructures is true.
+endVoid = true
+endVoidStructures = true
+# Kept from 1.12. The 1.20.1 world is the voidislandcontrol:void preset, not a world type.
+worldGenType = "VOID"
+worldGenSpecialParameters = ""
+# Biome id. The preset biome source is what generation actually uses.
+worldBiome = "minecraft:plains"
+cloudLevel = 32
+horizonLevel = 40
+# Island home dimension. 0 overworld, -1 nether, 1 end.
+baseDimension = 0
+
+[islandSettings]
+# Spawn pad: bedrock, grass, or the island type's own top block.
+islandMainSpawnType = "bedrock"
+# random, grid, or spiral placement of new islands.
+islandSpawnType = "random"
+# Blocks between island centers.
+islandDistance = 1000
+# Build and break radius around an island center. 0 disables range checks.
+protectionBuildRange = 500
+spawnProtection = true
+islandProtection = true
+# Pad width in blocks. 3 is a 3x3.
+islandSize = 3
+spawnChest = false
+# New islands are one chunk. Also the /island onechunk admin toggle.
+oneChunk = false
+# namespace:path*count or namespace:path{snbt}*count. No item metadata in 1.20.1.
+startingItems = []
+islandBiome = ""
+islandBiomeRange = 0
+# Y of the island surface.
+islandYLevel = 88
+# BEDROCK or SECONDARYBLOCK for the layer under the pad.
+bottomBlockType = "BEDROCK"
+autoCreate = false
+autoCreateServersOnly = false
+allowIslandCreation = true
+resetInventory = true
+# Structure nbt names in config/voidislandcontrolstructures.
+customIslands = []
+forceSpawn = false
+# Spawn buff length in ticks. 1200 is 60 seconds.
+buffTimer = 1200
+handleRespawn = true
+islandLockdown = false
+islandLockdownRange = 500
+
+[islandSettings.grassSettings]
+enableGrassIsland = true
+spawnTree = true
+# GRASS, DIRT, or COARSEDIRT.
+grassBlockType = "GRASS"
+
+[islandSettings.sandSettings]
+enableSandIsland = true
+spawnCactus = true
+# NORMAL or RED.
+sandBlockType = "RED"
+
+[islandSettings.snowSettings]
+enableSnowIsland = true
+spawnPumpkins = true
+spawnIgloo = false
+
+[islandSettings.woodSettings]
+enableWoodIsland = true
+spawnWater = true
+spawnString = true
+# OAK, SPRUCE, BIRCH, JUNGLE, ACACIA, or DARKOAK.
+woodBlockType = "DARKOAK"
+
+[islandSettings.gogSettings]
+# Garden of Glass pad. Uses Botania blocks when that mod is loaded, otherwise a pebble island.
+enableGoGIsland = true
+
+[commandSettings]
+# Base command name. Default is /island.
+commandName = "island"
+oneChunkCommandAllowed = false
+# NONE, IMPULSE, REPEATING, or CHAIN. Placed on a new island when not NONE.
+commandBlockType = "NONE"
+commandBlockAuto = false
+commandBlockCommand = ""
+commandBlockFacing = "UP"
+allowVisitCommand = true
+allowHomeCommand = true
+# Commands run once when the world first loads. Use @p for the first player.
+worldLoadCommands = []
+
+[commandSettings.commandBlockPos]
+# Offset from the island spawn for the command block.
+x = 0
+y = 0
+z = 0
+
+[commandSettings.visitSettings]
+# Defaults for visitors. Per-player overrides apply only when allowPerPlayerOverrides is true.
+allowBlockInteract = false
+allowItemUse = false
+allowEntityInteract = false
+allowAttack = false
+allowPickup = false
+allowBlockHarvest = false
+allowBlockPlace = false
+allowPerPlayerOverrides = false

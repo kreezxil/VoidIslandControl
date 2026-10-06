@@ -124,10 +124,6 @@ public final class SpawnHandler {
             }
         }
         IslandPlacer.placeCommandBlock(level, spawn);
-        var light = level.getChunkSource().getLightEngine();
-        int r = Math.max(4, VicConfig.islandSettings.islandSize + 2);
-        BlockPos.betweenClosed(spawn.offset(-r, -8, -r), spawn.offset(r, 12, r)).forEach(light::checkBlock);
-        light.runLightUpdates();
     }
 
     public static void enableOneChunk(ServerLevel level) {

@@ -1,0 +1,36 @@
+{
+  "mappings": {
+    "com/bartz24/voidislandcontrol/mixin/ItemEntityMixin": {
+      "playerTouch": "Lnet/minecraft/world/entity/item/ItemEntity;m_6123_(Lnet/minecraft/world/entity/player/Player;)V"
+    },
+    "com/bartz24/voidislandcontrol/mixin/ServerPlayerMixin": {
+      "tick": "Lnet/minecraft/server/level/ServerPlayer;m_8119_()V"
+    },
+    "com/bartz24/voidislandcontrol/mixin/ServerPlayerGameModeMixin": {
+      "destroyBlock": "Lnet/minecraft/server/level/ServerPlayerGameMode;m_9280_(Lnet/minecraft/core/BlockPos;)Z"
+     },
+    "com/bartz24/voidislandcontrol/mixin/PlayerListMixin": {
+      },
+    "com/bartz24/voidislandcontrol/mixin/PlayerAttackMixin": {
+      "attack": "Lnet/minecraft/world/entity/player/Player;m_5706_(Lnet/minecraft/world/entity/Entity;)V"
+    }
+  },
+  "data": {
+    "searge": {
+      "com/bartz24/voidislandcontrol/mixin/ItemEntityMixin": {
+        "playerTouch": "Lnet/minecraft/world/entity/item/ItemEntity;m_6123_(Lnet/minecraft/world/entity/player/Player;)V"
+      },
+      "com/bartz24/voidislandcontrol/mixin/ServerPlayerMixin": {
+        "tick": "Lnet/minecraft/server/level/ServerPlayer;m_8119_()V"
+      },
+      "com/bartz24/voidislandcontrol/mixin/ServerPlayerGameModeMixin": {
+        "destroyBlock": "Lnet/minecraft/server/level/ServerPlayerGameMode;m_9280_(Lnet/minecraft/core/BlockPos;)Z"
+         },
+      "com/bartz24/voidislandcontrol/mixin/PlayerListMixin": {
+      },
+      "com/bartz24/voidislandcontrol/mixin/PlayerAttackMixin": {
+        "attack": "Lnet/minecraft/world/entity/player/Player;m_5706_(Lnet/minecraft/world/entity/Entity;)V"
+      }
+    }
+  }
+}

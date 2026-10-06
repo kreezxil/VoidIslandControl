@@ -119,9 +119,15 @@ public final class IslandCommands {
         IslandManager.currentIslands.add(island);
         ServerLevel level = player.server.getLevel(VicConfig.baseLevel());
         BlockPos spawn = IslandManager.worldPos(island);
-        gen.generate(level, spawn);
-        IslandPlacer.placeCommandBlock(level, spawn);
-        IslandManager.tpPlayerToPosSpawn(player, spawn, island);
+        try {
+            gen.generate(level, spawn);
+            IslandPlacer.placeCommandBlock(level, spawn);
+            IslandManager.tpPlayerToPosSpawn(player, spawn, island);
+        } catch (Exception e) {
+            e.printStackTrace();
+            player.sendSystemMessage(Component.literal(e.toString()));
+            return 0;
+        }
         IslandManager.setStartingInv(player);
         VicSavedData.mark(level);
         IslandPos created = IslandManager.getPlayerIsland(player.getUUID());

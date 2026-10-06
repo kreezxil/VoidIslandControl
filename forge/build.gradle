@@ -33,9 +33,13 @@ dependencies {
     compileOnly project(":common")
     annotationProcessor("org.spongepowered:mixin:0.8.5:processor")
 }
-
+mixin {
+    add sourceSets.main, "voidislandcontrol.refmap.json"
+    config "voidislandcontrol.mixins.json"
+}
 jar {
     manifest.attributes([
             "MixinConfigs": "${mod_id}.mixins.json"
     ])
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }

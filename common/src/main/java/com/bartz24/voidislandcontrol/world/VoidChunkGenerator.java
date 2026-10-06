@@ -15,6 +15,7 @@ import net.minecraft.world.level.StructureManager;
 import net.minecraft.world.level.WorldGenLevel;
 import net.minecraft.world.level.biome.BiomeManager;
 import net.minecraft.world.level.biome.BiomeSource;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.ChunkGenerator;
@@ -77,6 +78,20 @@ public class VoidChunkGenerator extends ChunkGenerator {
     @Override
     public CompletableFuture<ChunkAccess> fillFromNoise(Executor executor, Blender blender, RandomState random,
                                                         StructureManager structureManager, ChunkAccess chunk) {
+        int surface = VicConfig.islandSettings.islandYLevel - 3;
+        int half = Math.max(1, VicConfig.islandSettings.islandSize / 2);
+        int wx = chunk.getPos().getMinBlockX();
+        int wz = chunk.getPos().getMinBlockZ();
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+        for (int x = 0; x < 16; x++) {
+            for (int z = 0; z < 16; z++) {
+                int bx = wx + x;
+                int bz = wz + z;
+                if (Math.abs(bx) > half || Math.abs(bz) > half) continue;
+                chunk.setBlockState(pos.set(bx, surface, bz), Blocks.GRASS_BLOCK.defaultBlockState(), false);
+                chunk.setBlockState(pos.set(bx, surface - 1, bz), Blocks.BEDROCK.defaultBlockState(), false);
+            }
+        }
         return CompletableFuture.completedFuture(chunk);
     }
 
