@@ -1,4 +1,4 @@
 {
-  "world_preset.voidislandcontrol.void": "Void World",
-  "world_preset.voidislandcontrol.void_overworld": "Void World (overworld only)"
+  "generator.voidislandcontrol.void": "Void World",
+  "generator.voidislandcontrol.void_overworld": "Void World (overworld only)"
 }
