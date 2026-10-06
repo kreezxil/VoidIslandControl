@@ -23,20 +23,25 @@ public class VicSavedData extends SavedData {
         Function<CompoundTag, VicSavedData> loader = VicSavedData::load;
         try {
             for (Method method : storage.getClass().getMethods()) {
-                if (!method.getName().equals("computeIfAbsent") || method.getParameterCount() != 2) continue;
-                Class<?> factoryType = method.getParameterTypes()[0];
-                if (factoryType == String.class) continue;
-                Constructor<?> factoryCtor = factoryType.getConstructor(Supplier.class, Function.class);
+                if (method.getParameterCount() != 2) continue;
+                Class<?>[] params = method.getParameterTypes();
+                if (params[1] != String.class || params[0] == String.class) continue;
+                Constructor<?> factoryCtor = null;
+                for (Constructor<?> ctor : params[0].getConstructors()) {
+                    if (ctor.getParameterCount() == 2) {
+                        factoryCtor = ctor;
+                        break;
+                    }
+                }
+                if (factoryCtor == null) continue;
                 Object factory = factoryCtor.newInstance(constructor, loader);
                 return (VicSavedData) method.invoke(storage, factory, NAME);
             }
-            Method legacy = storage.getClass().getMethod("computeIfAbsent", Function.class, Supplier.class, String.class);
-            return (VicSavedData) legacy.invoke(storage, loader, constructor, NAME);
         } catch (ReflectiveOperationException e) {
             throw new IllegalStateException("Cannot load vic_data", e);
         }
+        throw new IllegalStateException("Cannot load vic_data");
     }
-
     public VicSavedData() {
     }
 

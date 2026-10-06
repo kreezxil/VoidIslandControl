@@ -123,13 +123,13 @@ public final class IslandCommands {
             gen.generate(level, spawn);
             IslandPlacer.placeCommandBlock(level, spawn);
             IslandManager.tpPlayerToPosSpawn(player, spawn, island);
-        } catch (Exception e) {
+            IslandManager.setStartingInv(player);
+            VicSavedData.mark(level);
+        } catch (Throwable e) {
             e.printStackTrace();
             player.sendSystemMessage(Component.literal(e.toString()));
             return 0;
         }
-        IslandManager.setStartingInv(player);
-        VicSavedData.mark(level);
         IslandPos created = IslandManager.getPlayerIsland(player.getUUID());
         VicEvents.CREATE.listeners().forEach(l -> l.accept(player, created));
         player.sendSystemMessage(Component.literal("Island created (" + gen.identifier + ")."));
