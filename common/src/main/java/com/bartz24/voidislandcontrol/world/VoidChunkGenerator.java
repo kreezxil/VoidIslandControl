@@ -1,9 +1,11 @@
 package com.bartz24.voidislandcontrol.world;
 
+import com.bartz24.voidislandcontrol.logic.SpawnHandler;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.WorldGenRegion;
 import com.bartz24.voidislandcontrol.config.VicConfig;
 import net.minecraft.world.level.Level;
@@ -109,7 +111,8 @@ public class VoidChunkGenerator extends ChunkGenerator {
     }
 
     private boolean placeStructures(WorldGenLevel level) {
-        var key = level.getLevel().dimension();
+        if (!(level instanceof WorldGenRegion region)) return structures;
+        var key = region.getLevel().dimension();
         if (Level.NETHER.equals(key)) return VicConfig.worldGenSettings.netherVoidStructures;
         if (Level.END.equals(key)) return VicConfig.worldGenSettings.endVoidStructures;
         return structures;

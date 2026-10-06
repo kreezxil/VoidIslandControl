@@ -42,7 +42,7 @@ public final class SpawnHandler {
             IslandCommands.create(player, new String[]{"create", "bypass"});
         } else {
             if (VicConfig.islandSettings.oneChunk) enableOneChunk(level);
-            IslandManager.tpPlayerToPosSpawn(player, spawn, IslandManager.currentIslands.get(0));
+           // IslandManager.tpPlayerToPosSpawn(player, spawn, IslandManager.currentIslands.get(0));
             player.clearFire();
         }
         IslandManager.spawnedPlayers.add(player.getUUID().toString());
@@ -98,7 +98,16 @@ public final class SpawnHandler {
             }
         }
     }
-
+    public static void ensureSpawnIsland(ServerLevel level) {
+        ensureIslands();
+        if (!IslandManager.currentIslands.isEmpty()) return;
+        BlockPos spawn = new BlockPos(0, VicConfig.islandSettings.islandYLevel, 0);
+        IslandManager.currentIslands.add(new IslandPos(0, 0));
+        createSpawnIsland(level, spawn);
+        BlockPos stand = spawn.offset(IslandManager.getSpawnOffset(IslandManager.currentIslands.get(0)));
+        level.setDefaultSpawnPos(stand, 0.0F);
+        VicSavedData.mark(level);
+    }
     public static void createSpawnIsland(ServerLevel level, BlockPos spawn) {
         ensureIslands();
         String main = VicConfig.islandSettings.islandMainSpawnType;
@@ -115,6 +124,10 @@ public final class SpawnHandler {
             }
         }
         IslandPlacer.placeCommandBlock(level, spawn);
+        var light = level.getChunkSource().getLightEngine();
+        int r = Math.max(4, VicConfig.islandSettings.islandSize + 2);
+        BlockPos.betweenClosed(spawn.offset(-r, -8, -r), spawn.offset(r, 12, r)).forEach(light::checkBlock);
+        light.runLightUpdates();
     }
 
     public static void enableOneChunk(ServerLevel level) {

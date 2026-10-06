@@ -1,7 +1,12 @@
 {
-  "replace": false,
+  "replace": true,
   "values": [
     "voidislandcontrol:void",
-    "voidislandcontrol:void_overworld"
+    "voidislandcontrol:void_overworld",
+    "minecraft:normal",
+    "minecraft:flat",
+    "minecraft:large_biomes",
+    "minecraft:amplified",
+    "minecraft:single_biome_surface"
   ]
 }

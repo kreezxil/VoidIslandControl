@@ -16,3 +16,4 @@ What was adapted, not copied wholesale:
 - Build overworld, nether, and end stems from config when the preset is chosen. That idea comes from `de.melanx.skyblockbuilder.world.presets.SkyblockPreset` (`dimensions()`, `configuredOverworldChunkGenerator()`). Void Island Control keeps its own generator and reads `config/voidislandcontrol.toml` instead of SkyblockBuilder's JSON5 config.
 
 SkyblockBuilder is not bundled. No SkyblockBuilder source file is included in this repository.
+

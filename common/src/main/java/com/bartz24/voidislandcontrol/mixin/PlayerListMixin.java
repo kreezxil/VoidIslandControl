@@ -12,10 +12,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(PlayerList.class)
 public class PlayerListMixin {
-    @Inject(method = "placeNewPlayer", at = @At("TAIL"))
-    private void vic$join(Connection connection, ServerPlayer player, CallbackInfo ci) {
-        SpawnHandler.onJoin(player);
-    }
 
     @Inject(method = "respawn", at = @At("RETURN"))
     private void vic$respawn(ServerPlayer player, boolean keepInventory, CallbackInfoReturnable<ServerPlayer> cir) {
