@@ -31,11 +31,11 @@ public final class SpawnHandler {
         if (IslandManager.hasPlayerSpawned(player.getUUID())) return;
 
         BlockPos spawn = new BlockPos(0, VicConfig.islandSettings.islandYLevel, 0);
-        if (IslandManager.currentIslands.isEmpty()) {
-            IslandManager.currentIslands.add(new IslandPos(0, 0));
+        if (!IslandManager.hasPlayerSpawned(player.getUUID())) {
             createSpawnIsland(level, spawn);
-            level.setDefaultSpawnPos(spawn.offset(IslandManager.getSpawnOffset(IslandManager.currentIslands.get(0))), 0.0F);
+            level.setDefaultSpawnPos(spawn, 0.0F);
         }
+
         boolean auto = VicConfig.islandSettings.autoCreate
                 || (player.server.isDedicatedServer() && VicConfig.islandSettings.autoCreateServersOnly);
         if (auto && !IslandManager.worldOneChunk) {
@@ -98,16 +98,14 @@ public final class SpawnHandler {
             }
         }
     }
+
     public static void ensureSpawnIsland(ServerLevel level) {
         ensureIslands();
-        if (!IslandManager.currentIslands.isEmpty()) return;
         BlockPos spawn = new BlockPos(0, VicConfig.islandSettings.islandYLevel, 0);
-        IslandManager.currentIslands.add(new IslandPos(0, 0));
         createSpawnIsland(level, spawn);
-        BlockPos stand = spawn.offset(IslandManager.getSpawnOffset(IslandManager.currentIslands.get(0)));
-        level.setDefaultSpawnPos(stand, 0.0F);
-        VicSavedData.mark(level);
+        level.setDefaultSpawnPos(spawn, 0.0F);
     }
+
     public static void createSpawnIsland(ServerLevel level, BlockPos spawn) {
         ensureIslands();
         String main = VicConfig.islandSettings.islandMainSpawnType;

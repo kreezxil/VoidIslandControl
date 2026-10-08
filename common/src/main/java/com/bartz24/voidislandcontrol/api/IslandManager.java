@@ -63,11 +63,12 @@ public final class IslandManager {
     }
 
     public static IslandPos getNextIsland() {
-        int size = (int) Math.floor(Math.sqrt(currentIslands.size()));
+        int size = (int) Math.floor(Math.sqrt(currentIslands.size() + 1));
         if (size % 2 == 0 && size > 0) size--;
-        size = (size + 1) / 2;
+        size = Math.max(1, (size + 1) / 2);
         for (int x = -size; x <= size; x++) {
             for (int z = -size; z <= size; z++) {
+                if (x == 0 && z == 0) continue;
                 if (!hasPosition(x, z)) return new IslandPos(x, z);
             }
         }

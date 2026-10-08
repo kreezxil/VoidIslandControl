@@ -113,7 +113,11 @@ public final class Protection {
     }
 
     private static void tellCreate(ServerPlayer player) {
-        player.displayClientMessage(CREATE_FIRST, true);
+        String command = VicConfig.commandSettings.commandName;
+        if (command == null || command.isBlank()) command = "island";
+        Component line = Component.literal("create an island first. try /" + command + " create [<type>]");
+        player.displayClientMessage(line, true);
+        if (player.tickCount % 20 == 0) player.sendSystemMessage(line);
     }
 
     private static boolean isRestrictedVisitor(ServerPlayer player) {

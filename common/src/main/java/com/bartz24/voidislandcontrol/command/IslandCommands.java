@@ -118,6 +118,7 @@ public final class IslandCommands {
         IslandPos grid = IslandManager.getNextIsland();
         var gen = IslandManager.islandGenerations.get(type);
         IslandPos island = new IslandPos(gen.identifier, grid.getX(), grid.getY(), player.getUUID());
+        island.addNewPlayer(player.getUUID());
         IslandManager.currentIslands.add(island);
         ServerLevel level = player.server.getLevel(VicConfig.baseLevel());
         BlockPos spawn = IslandManager.worldPos(island);
@@ -240,9 +241,7 @@ public final class IslandCommands {
         }
         other.getInventory().clearContent();
         IslandManager.removePlayer(other.getUUID());
-        BlockPos spawn = new BlockPos(0, VicConfig.islandSettings.islandYLevel, 0);
-        IslandManager.tpPlayerToPos(other, spawn, IslandManager.currentIslands.isEmpty() ? null : IslandManager.currentIslands.get(0));
-        other.setGameMode(GameType.SURVIVAL);
+        toSpawn(other);
         VicSavedData.mark(player.server.getLevel(VicConfig.baseLevel()));
         player.sendSystemMessage(Component.literal("Kicked " + name + "."));
         other.sendSystemMessage(Component.literal("You were kicked from the island."));
@@ -279,11 +278,16 @@ public final class IslandCommands {
     private static int spawn(ServerPlayer player) {
         if (!vic(player)) return 0;
         endVisit(player);
-        IslandManager.tpPlayerToPos(player, new BlockPos(0, VicConfig.islandSettings.islandYLevel, 0),
-                IslandManager.currentIslands.isEmpty() ? null : IslandManager.currentIslands.get(0));
-        player.setGameMode(GameType.SURVIVAL);
+        toSpawn(player);
         VicEvents.SPAWN.listeners().forEach(l -> l.accept(player));
         return 1;
+    }
+
+    private static void toSpawn(ServerPlayer player) {
+        ServerLevel level = player.server.getLevel(VicConfig.baseLevel());
+        BlockPos spawn = new BlockPos(0, VicConfig.islandSettings.islandYLevel, 0);
+        player.teleportTo(level, spawn.getX() + 0.5, spawn.getY(), spawn.getZ() + 0.5, player.getYRot(), player.getXRot());
+        player.setGameMode(GameType.SURVIVAL);
     }
 
     private static int reset(ServerPlayer player, String[] args) {

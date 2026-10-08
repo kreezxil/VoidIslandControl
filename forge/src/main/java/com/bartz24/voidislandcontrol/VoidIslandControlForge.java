@@ -1,6 +1,7 @@
 package com.bartz24.voidislandcontrol;
 
 import com.bartz24.voidislandcontrol.logic.SpawnHandler;
+import com.bartz24.voidislandcontrol.logic.VicServerLog;
 import com.bartz24.voidislandcontrol.world.VoidChunkGenerator;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.server.level.ServerPlayer;
@@ -25,6 +26,7 @@ public class VoidIslandControlForge {
         modBus.addListener(this::registerCodec);
         MinecraftForge.EVENT_BUS.addListener(this::onRespawn);
         MinecraftForge.EVENT_BUS.addListener(this::registerCommands);
+        MinecraftForge.EVENT_BUS.addListener((net.minecraftforge.event.server.ServerStartedEvent event) -> VicServerLog.onStarted(event.getServer()));
         if (FMLEnvironment.dist == Dist.CLIENT) {
             registerClientWorldType();
         }

@@ -16,18 +16,13 @@ import java.util.function.Supplier;
 
 public class VicSavedData extends SavedData {
     public static final String NAME = "vic_data";
-
-    /**
-     * Forge sets this from the mod constructor. A direct Factory call is reobfuscated.
-     * Reflection by the Mojmap name computeIfAbsent is not, which is why production threw.
-     */
-    public static volatile Function<ServerLevel, VicSavedData> LOADER;
+    private static VicSavedData live;
 
     public static VicSavedData get(ServerLevel level) {
+        if (live != null) return live;
         Object storage = level.getDataStorage();
         Supplier<VicSavedData> constructor = VicSavedData::new;
         Function<CompoundTag, VicSavedData> loader = VicSavedData::load;
-        ReflectiveOperationException last = null;
         for (Method method : storage.getClass().getMethods()) {
             if (method.getParameterCount() != 2) continue;
             Class<?>[] params = method.getParameterTypes();
@@ -40,40 +35,31 @@ public class VicSavedData extends SavedData {
                     Object factory = cp.length == 2
                             ? ctor.newInstance(constructor, loader)
                             : ctor.newInstance(constructor, loader, null);
-                    return (VicSavedData) method.invoke(storage, factory, NAME);
-                } catch (ReflectiveOperationException e) {
-                    last = e;
+                    live = (VicSavedData) method.invoke(storage, factory, NAME);
+                    return live;
+                } catch (ReflectiveOperationException ignored) {
                 }
             }
         }
-        IllegalStateException fail = new IllegalStateException("Cannot load vic_data");
-        if (last != null) fail.initCause(last);
-        throw fail;
-    }
-
-    private static Object newFactory(Class<?> factoryType, Supplier<VicSavedData> constructor,
-                                     Function<CompoundTag, VicSavedData> loader) throws ReflectiveOperationException {
-        for (Constructor<?> ctor : factoryType.getDeclaredConstructors()) {
-            Class<?>[] cp = ctor.getParameterTypes();
-            ctor.setAccessible(true);
-            if (cp.length == 2) return ctor.newInstance(constructor, loader);
-            if (cp.length == 3) return ctor.newInstance(constructor, loader, null);
-        }
-        return null;
+        live = new VicSavedData();
+        return live;
     }
 
     public VicSavedData() {
     }
 
     public static VicSavedData load(CompoundTag nbt) {
-        VicSavedData data = new VicSavedData();
+        VicSavedData data = live == null ? new VicSavedData() : live;
+        live = data;
         IslandManager.currentIslands.clear();
         IslandManager.spawnedPlayers.clear();
         IslandManager.worldOneChunk = false;
         IslandManager.initialIslandDistance = VicConfig.islandSettings.islandDistance;
         ListTag list = nbt.getList("Positions", Tag.TAG_COMPOUND);
         for (int i = 0; i < list.size(); i++) {
-            IslandManager.currentIslands.add(IslandPos.read(list.getCompound(i)));
+            IslandPos pos = IslandPos.read(list.getCompound(i));
+            if (pos.getX() == 0 && pos.getY() == 0 && pos.getPlayerUUIDs().isEmpty()) continue;
+            IslandManager.currentIslands.add(pos);
         }
         ListTag spawned = nbt.getList("SpawnedPlayers", Tag.TAG_COMPOUND);
         for (int i = 0; i < spawned.size(); i++) {
@@ -88,7 +74,10 @@ public class VicSavedData extends SavedData {
     @Override
     public CompoundTag save(CompoundTag nbt) {
         ListTag list = new ListTag();
-        for (IslandPos pos : IslandManager.currentIslands) list.add(pos.write());
+        for (IslandPos pos : IslandManager.currentIslands) {
+            if (pos.getX() == 0 && pos.getY() == 0 && pos.getPlayerUUIDs().isEmpty()) continue;
+            list.add(pos.write());
+        }
         nbt.put("Positions", list);
         ListTag spawned = new ListTag();
         for (String name : IslandManager.spawnedPlayers) {
@@ -104,6 +93,10 @@ public class VicSavedData extends SavedData {
     }
 
     public static void mark(ServerLevel level) {
-        if (level != null) get(level).setDirty();
+        if (level == null) return;
+        try {
+            get(level).setDirty();
+        } catch (RuntimeException ignored) {
+        }
     }
 }
