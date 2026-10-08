@@ -17,31 +17,51 @@ import java.util.function.Supplier;
 public class VicSavedData extends SavedData {
     public static final String NAME = "vic_data";
 
+    /**
+     * Forge sets this from the mod constructor. A direct Factory call is reobfuscated.
+     * Reflection by the Mojmap name computeIfAbsent is not, which is why production threw.
+     */
+    public static volatile Function<ServerLevel, VicSavedData> LOADER;
+
     public static VicSavedData get(ServerLevel level) {
         Object storage = level.getDataStorage();
         Supplier<VicSavedData> constructor = VicSavedData::new;
         Function<CompoundTag, VicSavedData> loader = VicSavedData::load;
-        try {
-            for (Method method : storage.getClass().getMethods()) {
-                if (method.getParameterCount() != 2) continue;
-                Class<?>[] params = method.getParameterTypes();
-                if (params[1] != String.class || params[0] == String.class) continue;
-                Constructor<?> factoryCtor = null;
-                for (Constructor<?> ctor : params[0].getConstructors()) {
-                    if (ctor.getParameterCount() == 2) {
-                        factoryCtor = ctor;
-                        break;
-                    }
+        ReflectiveOperationException last = null;
+        for (Method method : storage.getClass().getMethods()) {
+            if (method.getParameterCount() != 2) continue;
+            Class<?>[] params = method.getParameterTypes();
+            if (params[1] != String.class || params[0] == String.class) continue;
+            for (Constructor<?> ctor : params[0].getDeclaredConstructors()) {
+                Class<?>[] cp = ctor.getParameterTypes();
+                if (cp.length != 2 && cp.length != 3) continue;
+                try {
+                    ctor.setAccessible(true);
+                    Object factory = cp.length == 2
+                            ? ctor.newInstance(constructor, loader)
+                            : ctor.newInstance(constructor, loader, null);
+                    return (VicSavedData) method.invoke(storage, factory, NAME);
+                } catch (ReflectiveOperationException e) {
+                    last = e;
                 }
-                if (factoryCtor == null) continue;
-                Object factory = factoryCtor.newInstance(constructor, loader);
-                return (VicSavedData) method.invoke(storage, factory, NAME);
             }
-        } catch (ReflectiveOperationException e) {
-            throw new IllegalStateException("Cannot load vic_data", e);
         }
-        throw new IllegalStateException("Cannot load vic_data");
+        IllegalStateException fail = new IllegalStateException("Cannot load vic_data");
+        if (last != null) fail.initCause(last);
+        throw fail;
     }
+
+    private static Object newFactory(Class<?> factoryType, Supplier<VicSavedData> constructor,
+                                     Function<CompoundTag, VicSavedData> loader) throws ReflectiveOperationException {
+        for (Constructor<?> ctor : factoryType.getDeclaredConstructors()) {
+            Class<?>[] cp = ctor.getParameterTypes();
+            ctor.setAccessible(true);
+            if (cp.length == 2) return ctor.newInstance(constructor, loader);
+            if (cp.length == 3) return ctor.newInstance(constructor, loader, null);
+        }
+        return null;
+    }
+
     public VicSavedData() {
     }
 

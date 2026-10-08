@@ -68,8 +68,10 @@ public final class IslandCommands {
                                                         StringArgumentType.getString(ctx, "value"))))))));
     }
 
-    private static final SuggestionProvider<CommandSourceStack> TYPES = (ctx, builder) ->
-            SharedSuggestionProvider.suggest(IslandManager.getIslandGenTypes(), builder);
+    private static final SuggestionProvider<CommandSourceStack> TYPES = (ctx, builder) -> {
+        SpawnHandler.ensureIslands();
+        return SharedSuggestionProvider.suggest(IslandManager.getIslandGenTypes(), builder);
+    };
     private static final SuggestionProvider<CommandSourceStack> ONLINE = (ctx, builder) ->
             SharedSuggestionProvider.suggest(ctx.getSource().getServer().getPlayerNames(), builder);
     private static final SuggestionProvider<CommandSourceStack> KNOWN = (ctx, builder) ->
@@ -120,6 +122,7 @@ public final class IslandCommands {
         ServerLevel level = player.server.getLevel(VicConfig.baseLevel());
         BlockPos spawn = IslandManager.worldPos(island);
         try {
+            IslandPlacer.clearPlot(level, spawn);
             gen.generate(level, spawn);
             IslandPlacer.placeCommandBlock(level, spawn);
             IslandManager.tpPlayerToPosSpawn(player, spawn, island);
@@ -200,6 +203,11 @@ public final class IslandCommands {
         endVisit(player);
         IslandManager.removePlayer(player.getUUID());
         IslandManager.removeLeaveConfirm(player.getUUID());
+        if (island.getPlayerUUIDs().isEmpty() && VicConfig.islandSettings.deleteIslandOnAbandonment) {
+            ServerLevel level = player.server.getLevel(VicConfig.baseLevel());
+            IslandPlacer.clearPlot(level, IslandManager.worldPos(island));
+            IslandManager.currentIslands.remove(island);
+        }
         if (VicConfig.islandSettings.resetInventory) player.getInventory().clearContent();
         BlockPos spawn = new BlockPos(0, VicConfig.islandSettings.islandYLevel, 0);
         IslandManager.tpPlayerToPos(player, spawn, IslandManager.currentIslands.isEmpty() ? null : IslandManager.currentIslands.get(0));
@@ -232,9 +240,12 @@ public final class IslandCommands {
         }
         other.getInventory().clearContent();
         IslandManager.removePlayer(other.getUUID());
-        IslandManager.tpPlayerToPos(other, new BlockPos(0, VicConfig.islandSettings.islandYLevel, 0), null);
-        other.sendSystemMessage(Component.literal("You were kicked from the island."));
+        BlockPos spawn = new BlockPos(0, VicConfig.islandSettings.islandYLevel, 0);
+        IslandManager.tpPlayerToPos(other, spawn, IslandManager.currentIslands.isEmpty() ? null : IslandManager.currentIslands.get(0));
+        other.setGameMode(GameType.SURVIVAL);
         VicSavedData.mark(player.server.getLevel(VicConfig.baseLevel()));
+        player.sendSystemMessage(Component.literal("Kicked " + name + "."));
+        other.sendSystemMessage(Component.literal("You were kicked from the island."));
         return 1;
     }
 
@@ -298,6 +309,8 @@ public final class IslandCommands {
             player.sendSystemMessage(Component.literal("Chunk Reset!"));
             return 1;
         }
+        IslandPos old = IslandManager.getPlayerIsland(player.getUUID());
+        if (old != null) IslandPlacer.clearPlot(level, IslandManager.worldPos(old));
         leave(player);
         create(player, args.length > 1 ? new String[]{"create", args[1]} : new String[]{"create"});
         VicEvents.RESET.listeners().forEach(l -> l.accept(player, IslandManager.getPlayerIsland(player.getUUID())));

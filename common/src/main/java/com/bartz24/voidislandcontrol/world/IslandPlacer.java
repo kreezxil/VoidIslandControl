@@ -220,5 +220,22 @@ public final class IslandPlacer {
         if (rl == null || !BuiltInRegistries.BLOCK.containsKey(rl)) return fallback;
         return BuiltInRegistries.BLOCK.get(rl).defaultBlockState();
     }
+
+    public static void clearPlot(ServerLevel level, BlockPos spawn) {
+        int r = Math.max(4, VicConfig.islandSettings.islandSize + 8);
+        int min = level.getMinBuildHeight();
+        int max = Math.min(level.getMaxBuildHeight(), spawn.getY() + 24);
+        BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
+        for (int x = spawn.getX() - r; x <= spawn.getX() + r; x++) {
+            for (int z = spawn.getZ() - r; z <= spawn.getZ() + r; z++) {
+                for (int y = min; y < max; y++) {
+                    cursor.set(x, y, z);
+                    if (!level.getBlockState(cursor).isAir()) {
+                        level.setBlock(cursor, Blocks.AIR.defaultBlockState(), 2);
+                    }
+                }
+            }
+        }
+    }
 }
 

@@ -12,7 +12,8 @@
   "license": "${license}",
   "environment": "*",
   "entrypoints": {
-    "main": ["com.bartz24.voidislandcontrol.VoidIslandControlFabric"]
+    "main": ["com.bartz24.voidislandcontrol.VoidIslandControlFabric"],
+    "client": ["com.bartz24.voidislandcontrol.client.DefaultWorldTypeFabric"]
   },
   "mixins": ["${mod_id}.mixins.json"],
   "depends": {

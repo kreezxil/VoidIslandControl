@@ -11,11 +11,16 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 /**
  * TOML config at config/voidislandcontrol.toml. Same file for Forge, NeoForge, and Fabric.
  * 1.20.1 has no item metadata, so starting items are namespace:path*count
  * or namespace:path{snbt}*count.
+ *
+ * Add an option by adding one entry in entries(). Comment, section, key, and the field
+ * sit on that one line. Do not add a second copy in a save or load method.
  */
 public final class VicConfig {
     public static WorldGenSettings worldGenSettings = new WorldGenSettings();
@@ -32,10 +37,8 @@ public final class VicConfig {
         Path file = configDir.resolve(References.MODID + ".toml");
         try {
             Files.createDirectories(configDir);
-            if (Files.exists(file)) {
-                apply(parse(Files.readString(file)));
-            }
-            fillNulls();
+            Map<String, String> values = Files.exists(file) ? parse(Files.readString(file)) : Map.of();
+            for (Entry entry : entries()) entry.read(values);
             save(configDir);
         } catch (IOException e) {
             throw new RuntimeException("Failed to load Void Island Control config", e);
@@ -45,21 +48,131 @@ public final class VicConfig {
     public static void save(Path configDir) throws IOException {
         Path file = configDir.resolve(References.MODID + ".toml");
         try (Writer writer = Files.newBufferedWriter(file)) {
-            writer.write(documented());
+            writer.write("# Void Island Control. Forge, NeoForge, and Fabric all use config/voidislandcontrol.toml\n");
+            writer.write("# Lines starting with # are comments. Restart after edits. Delete this file to regenerate defaults.\n");
+            writer.write("# Create the world with the Void Island preset, or set level-type=voidislandcontrol:void on a dedicated server.\n");
+            String section = "";
+            for (Entry entry : entries()) {
+                if (!entry.section.equals(section)) {
+                    section = entry.section;
+                    writer.write("\n[" + section + "]\n");
+                }
+                if (entry.comment != null && !entry.comment.isBlank()) {
+                    writer.write("# " + entry.comment + "\n");
+                }
+                writer.write(entry.key + " = " + entry.write() + "\n");
+            }
         }
     }
 
-    private static void fillNulls() {
-        if (islandSettings.startingItems == null) islandSettings.startingItems = new String[0];
-        if (islandSettings.customIslands == null) islandSettings.customIslands = new String[0];
-        if (commandSettings.worldLoadCommands == null) commandSettings.worldLoadCommands = new String[0];
-        if (commandSettings.visitSettings == null) commandSettings.visitSettings = new VisitSettings();
-        if (islandSettings.grassSettings == null) islandSettings.grassSettings = new GrassIslandSettings();
-        if (islandSettings.sandSettings == null) islandSettings.sandSettings = new SandIslandSettings();
-        if (islandSettings.snowSettings == null) islandSettings.snowSettings = new SnowIslandSettings();
-        if (islandSettings.woodSettings == null) islandSettings.woodSettings = new WoodIslandSettings();
-        if (islandSettings.gogSettings == null) islandSettings.gogSettings = new GoGSettings();
-        if (commandSettings.commandBlockPos == null) commandSettings.commandBlockPos = new CommandBlockPos();
+    private static List<Entry> entries() {
+        WorldGenSettings w = worldGenSettings;
+        IslandSettings s = islandSettings;
+        CommandSettings c = commandSettings;
+        VisitSettings visit = c.visitSettings;
+        List<Entry> list = new ArrayList<>();
+
+        list.add(bool("worldGenSettings", "netherVoid", "Void the nether. Fortresses still place when netherVoidStructures is true.", () -> w.netherVoid, v -> w.netherVoid = v));
+        list.add(bool("worldGenSettings", "netherVoidStructures", "", () -> w.netherVoidStructures, v -> w.netherVoidStructures = v));
+        list.add(bool("worldGenSettings", "endVoid", "Void the end. End cities still place when endVoidStructures is true.", () -> w.endVoid, v -> w.endVoid = v));
+        list.add(bool("worldGenSettings", "endVoidStructures", "", () -> w.endVoidStructures, v -> w.endVoidStructures = v));
+        list.add(str("worldGenSettings", "worldGenType", "Kept from 1.12. The 1.20.1 world is the voidislandcontrol:void preset, not a world type.", () -> w.worldGenType, v -> w.worldGenType = v));
+        list.add(str("worldGenSettings", "worldGenSpecialParameters", "", () -> w.worldGenSpecialParameters, v -> w.worldGenSpecialParameters = v));
+        list.add(str("worldGenSettings", "worldBiome", "Biome id. The preset biome source is what generation actually uses.", () -> w.worldBiome, v -> w.worldBiome = v));
+        list.add(num("worldGenSettings", "cloudLevel", "", () -> w.cloudLevel, v -> w.cloudLevel = v));
+        list.add(num("worldGenSettings", "horizonLevel", "", () -> w.horizonLevel, v -> w.horizonLevel = v));
+        list.add(num("worldGenSettings", "baseDimension", "Island home dimension. 0 overworld, -1 nether, 1 end.", () -> w.baseDimension, v -> w.baseDimension = v));
+
+        list.add(str("islandSettings", "islandMainSpawnType", "Spawn pad: bedrock, grass, or an island type id.", () -> s.islandMainSpawnType, v -> s.islandMainSpawnType = v));
+        list.add(str("islandSettings", "islandSpawnType", "Type used by /island create with no argument. random picks one.", () -> s.islandSpawnType, v -> s.islandSpawnType = v));
+        list.add(num("islandSettings", "islandDistance", "Blocks between island centers.", () -> s.islandDistance, v -> s.islandDistance = v));
+        list.add(num("islandSettings", "protectionBuildRange", "Build and break radius around an island center. 0 disables range checks.", () -> s.protectionBuildRange, v -> s.protectionBuildRange = v));
+        list.add(bool("islandSettings", "spawnProtection", "", () -> s.spawnProtection, v -> s.spawnProtection = v));
+        list.add(bool("islandSettings", "islandProtection", "", () -> s.islandProtection, v -> s.islandProtection = v));
+        list.add(num("islandSettings", "islandSize", "Pad width in blocks. 3 is a 3x3.", () -> s.islandSize, v -> s.islandSize = v));
+        list.add(bool("islandSettings", "spawnChest", "", () -> s.spawnChest, v -> s.spawnChest = v));
+        list.add(bool("islandSettings", "oneChunk", "New islands are one chunk. Also the /island onechunk admin toggle.", () -> s.oneChunk, v -> s.oneChunk = v));
+        list.add(arr("islandSettings", "startingItems", "namespace:path*count or namespace:path{snbt}*count. No item metadata in 1.20.1.", () -> s.startingItems, v -> s.startingItems = v));
+        list.add(str("islandSettings", "islandBiome", "", () -> s.islandBiome, v -> s.islandBiome = v));
+        list.add(num("islandSettings", "islandBiomeRange", "", () -> s.islandBiomeRange, v -> s.islandBiomeRange = v));
+        list.add(num("islandSettings", "islandYLevel", "Y of the island surface.", () -> s.islandYLevel, v -> s.islandYLevel = v));
+        list.add(str("islandSettings", "bottomBlockType", "BEDROCK or SECONDARYBLOCK for the layer under the pad.", () -> s.bottomBlockType, v -> s.bottomBlockType = v));
+        list.add(bool("islandSettings", "autoCreate", "", () -> s.autoCreate, v -> s.autoCreate = v));
+        list.add(bool("islandSettings", "autoCreateServersOnly", "", () -> s.autoCreateServersOnly, v -> s.autoCreateServersOnly = v));
+        list.add(bool("islandSettings", "allowIslandCreation", "", () -> s.allowIslandCreation, v -> s.allowIslandCreation = v));
+        list.add(bool("islandSettings", "resetInventory", "", () -> s.resetInventory, v -> s.resetInventory = v));
+        list.add(arr("islandSettings", "customIslands", "Structure nbt names in config/voidislandcontrolstructures.", () -> s.customIslands, v -> s.customIslands = v));
+        list.add(bool("islandSettings", "forceSpawn", "", () -> s.forceSpawn, v -> s.forceSpawn = v));
+        list.add(num("islandSettings", "buffTimer", "Spawn buff length in ticks. 1200 is 60 seconds.", () -> s.buffTimer, v -> s.buffTimer = v));
+        list.add(bool("islandSettings", "handleRespawn", "", () -> s.handleRespawn, v -> s.handleRespawn = v));
+        list.add(bool("islandSettings", "islandLockdown", "", () -> s.islandLockdown, v -> s.islandLockdown = v));
+        list.add(num("islandSettings", "islandLockdownRange", "", () -> s.islandLockdownRange, v -> s.islandLockdownRange = v));
+        list.add(bool("islandSettings", "deleteIslandOnAbandonment", "Last member leaving. true clears the plot and frees the grid cell. false keeps both so the island can be recovered.", () -> s.deleteIslandOnAbandonment, v -> s.deleteIslandOnAbandonment = v));
+        list.add(bool("islandSettings", "defaultVoidWorld", "Create World screen. true selects voidislandcontrol:void ahead of the vanilla default and Ex Deorum. false leaves the button alone.", () -> s.defaultVoidWorld, v -> s.defaultVoidWorld = v));
+
+        list.add(bool("islandSettings.grassSettings", "enableGrassIsland", "", () -> s.grassSettings.enableGrassIsland, v -> s.grassSettings.enableGrassIsland = v));
+        list.add(bool("islandSettings.grassSettings", "spawnTree", "", () -> s.grassSettings.spawnTree, v -> s.grassSettings.spawnTree = v));
+        list.add(str("islandSettings.grassSettings", "grassBlockType", "GRASS, DIRT, or COARSEDIRT.", () -> s.grassSettings.grassBlockType, v -> s.grassSettings.grassBlockType = v));
+
+        list.add(bool("islandSettings.sandSettings", "enableSandIsland", "", () -> s.sandSettings.enableSandIsland, v -> s.sandSettings.enableSandIsland = v));
+        list.add(bool("islandSettings.sandSettings", "spawnCactus", "", () -> s.sandSettings.spawnCactus, v -> s.sandSettings.spawnCactus = v));
+        list.add(str("islandSettings.sandSettings", "sandBlockType", "NORMAL or RED.", () -> s.sandSettings.sandBlockType, v -> s.sandSettings.sandBlockType = v));
+
+        list.add(bool("islandSettings.snowSettings", "enableSnowIsland", "", () -> s.snowSettings.enableSnowIsland, v -> s.snowSettings.enableSnowIsland = v));
+        list.add(bool("islandSettings.snowSettings", "spawnPumpkins", "", () -> s.snowSettings.spawnPumpkins, v -> s.snowSettings.spawnPumpkins = v));
+        list.add(bool("islandSettings.snowSettings", "spawnIgloo", "", () -> s.snowSettings.spawnIgloo, v -> s.snowSettings.spawnIgloo = v));
+
+        list.add(bool("islandSettings.woodSettings", "enableWoodIsland", "", () -> s.woodSettings.enableWoodIsland, v -> s.woodSettings.enableWoodIsland = v));
+        list.add(bool("islandSettings.woodSettings", "spawnWater", "", () -> s.woodSettings.spawnWater, v -> s.woodSettings.spawnWater = v));
+        list.add(bool("islandSettings.woodSettings", "spawnString", "", () -> s.woodSettings.spawnString, v -> s.woodSettings.spawnString = v));
+        list.add(str("islandSettings.woodSettings", "woodBlockType", "OAK, SPRUCE, BIRCH, JUNGLE, ACACIA, or DARKOAK.", () -> s.woodSettings.woodBlockType, v -> s.woodSettings.woodBlockType = v));
+
+        list.add(bool("islandSettings.gogSettings", "enableGoGIsland", "Garden of Glass pad. Uses Botania blocks when that mod is loaded, otherwise a pebble island.", () -> s.gogSettings.enableGoGIsland, v -> s.gogSettings.enableGoGIsland = v));
+
+        list.add(str("commandSettings", "commandName", "Base command name. Default is /island.", () -> c.commandName, v -> c.commandName = v));
+        list.add(bool("commandSettings", "oneChunkCommandAllowed", "", () -> c.oneChunkCommandAllowed, v -> c.oneChunkCommandAllowed = v));
+        list.add(str("commandSettings", "commandBlockType", "NONE, IMPULSE, REPEATING, or CHAIN. Placed on a new island when not NONE.", () -> c.commandBlockType, v -> c.commandBlockType = v));
+        list.add(bool("commandSettings", "commandBlockAuto", "", () -> c.commandBlockAuto, v -> c.commandBlockAuto = v));
+        list.add(str("commandSettings", "commandBlockCommand", "", () -> c.commandBlockCommand, v -> c.commandBlockCommand = v));
+        list.add(str("commandSettings", "commandBlockFacing", "", () -> c.commandBlockFacing, v -> c.commandBlockFacing = v));
+        list.add(bool("commandSettings", "allowVisitCommand", "", () -> c.allowVisitCommand, v -> c.allowVisitCommand = v));
+        list.add(bool("commandSettings", "allowHomeCommand", "", () -> c.allowHomeCommand, v -> c.allowHomeCommand = v));
+        list.add(arr("commandSettings", "worldLoadCommands", "Commands run once when the world first loads. Use @p for the first player.", () -> c.worldLoadCommands, v -> c.worldLoadCommands = v));
+
+        list.add(num("commandSettings.commandBlockPos", "x", "Offset from the island spawn for the command block.", () -> c.commandBlockPos.x, v -> c.commandBlockPos.x = v));
+        list.add(num("commandSettings.commandBlockPos", "y", "", () -> c.commandBlockPos.y, v -> c.commandBlockPos.y = v));
+        list.add(num("commandSettings.commandBlockPos", "z", "", () -> c.commandBlockPos.z, v -> c.commandBlockPos.z = v));
+
+        list.add(bool("commandSettings.visitSettings", "allowBlockInteract", "Defaults for visitors. Per-player overrides apply only when allowPerPlayerOverrides is true.", () -> visit.allowBlockInteract, v -> visit.allowBlockInteract = v));
+        list.add(bool("commandSettings.visitSettings", "allowItemUse", "", () -> visit.allowItemUse, v -> visit.allowItemUse = v));
+        list.add(bool("commandSettings.visitSettings", "allowEntityInteract", "", () -> visit.allowEntityInteract, v -> visit.allowEntityInteract = v));
+        list.add(bool("commandSettings.visitSettings", "allowAttack", "", () -> visit.allowAttack, v -> visit.allowAttack = v));
+        list.add(bool("commandSettings.visitSettings", "allowPickup", "", () -> visit.allowPickup, v -> visit.allowPickup = v));
+        list.add(bool("commandSettings.visitSettings", "allowBlockHarvest", "", () -> visit.allowBlockHarvest, v -> visit.allowBlockHarvest = v));
+        list.add(bool("commandSettings.visitSettings", "allowBlockPlace", "", () -> visit.allowBlockPlace, v -> visit.allowBlockPlace = v));
+        list.add(bool("commandSettings.visitSettings", "allowPerPlayerOverrides", "", () -> visit.allowPerPlayerOverrides, v -> visit.allowPerPlayerOverrides = v));
+        return list;
+    }
+
+    private static Entry bool(String section, String key, String comment, Supplier<Boolean> get, Consumer<Boolean> set) {
+        return new Entry(section, key, comment, () -> Boolean.toString(get.get()), raw -> set.accept(Boolean.parseBoolean(raw)));
+    }
+
+    private static Entry num(String section, String key, String comment, Supplier<Integer> get, Consumer<Integer> set) {
+        return new Entry(section, key, comment, () -> Integer.toString(get.get()), raw -> {
+            try {
+                set.accept(Integer.parseInt(raw));
+            } catch (NumberFormatException ignored) {
+            }
+        });
+    }
+
+    private static Entry str(String section, String key, String comment, Supplier<String> get, Consumer<String> set) {
+        return new Entry(section, key, comment, () -> q(get.get()), raw -> set.accept(unquote(raw)));
+    }
+
+    private static Entry arr(String section, String key, String comment, Supplier<String[]> get, Consumer<String[]> set) {
+        return new Entry(section, key, comment, () -> writeArr(get.get()), raw -> set.accept(readArr(raw)));
     }
 
     private static Map<String, String> parse(String raw) {
@@ -81,275 +194,19 @@ public final class VicConfig {
         return values;
     }
 
-    private static void apply(Map<String, String> v) {
-        WorldGenSettings w = worldGenSettings;
-        w.netherVoid = bool(v, "worldGenSettings.netherVoid", w.netherVoid);
-        w.netherVoidStructures = bool(v, "worldGenSettings.netherVoidStructures", w.netherVoidStructures);
-        w.endVoid = bool(v, "worldGenSettings.endVoid", w.endVoid);
-        w.endVoidStructures = bool(v, "worldGenSettings.endVoidStructures", w.endVoidStructures);
-        w.worldGenType = str(v, "worldGenSettings.worldGenType", w.worldGenType);
-        w.worldGenSpecialParameters = str(v, "worldGenSettings.worldGenSpecialParameters", w.worldGenSpecialParameters);
-        w.worldBiome = str(v, "worldGenSettings.worldBiome", w.worldBiome);
-        w.cloudLevel = num(v, "worldGenSettings.cloudLevel", w.cloudLevel);
-        w.horizonLevel = num(v, "worldGenSettings.horizonLevel", w.horizonLevel);
-        w.baseDimension = num(v, "worldGenSettings.baseDimension", w.baseDimension);
-
-        IslandSettings s = islandSettings;
-        s.islandMainSpawnType = str(v, "islandSettings.islandMainSpawnType", s.islandMainSpawnType);
-        s.islandSpawnType = str(v, "islandSettings.islandSpawnType", s.islandSpawnType);
-        s.islandDistance = num(v, "islandSettings.islandDistance", s.islandDistance);
-        s.protectionBuildRange = num(v, "islandSettings.protectionBuildRange", s.protectionBuildRange);
-        s.spawnProtection = bool(v, "islandSettings.spawnProtection", s.spawnProtection);
-        s.islandProtection = bool(v, "islandSettings.islandProtection", s.islandProtection);
-        s.islandSize = num(v, "islandSettings.islandSize", s.islandSize);
-        s.spawnChest = bool(v, "islandSettings.spawnChest", s.spawnChest);
-        s.oneChunk = bool(v, "islandSettings.oneChunk", s.oneChunk);
-        s.startingItems = arr(v, "islandSettings.startingItems", s.startingItems);
-        s.islandBiome = str(v, "islandSettings.islandBiome", s.islandBiome);
-        s.islandBiomeRange = num(v, "islandSettings.islandBiomeRange", s.islandBiomeRange);
-        s.islandYLevel = num(v, "islandSettings.islandYLevel", s.islandYLevel);
-        s.bottomBlockType = str(v, "islandSettings.bottomBlockType", s.bottomBlockType);
-        s.autoCreate = bool(v, "islandSettings.autoCreate", s.autoCreate);
-        s.autoCreateServersOnly = bool(v, "islandSettings.autoCreateServersOnly", s.autoCreateServersOnly);
-        s.allowIslandCreation = bool(v, "islandSettings.allowIslandCreation", s.allowIslandCreation);
-        s.resetInventory = bool(v, "islandSettings.resetInventory", s.resetInventory);
-        s.customIslands = arr(v, "islandSettings.customIslands", s.customIslands);
-        s.forceSpawn = bool(v, "islandSettings.forceSpawn", s.forceSpawn);
-        s.buffTimer = num(v, "islandSettings.buffTimer", s.buffTimer);
-        s.handleRespawn = bool(v, "islandSettings.handleRespawn", s.handleRespawn);
-        s.islandLockdown = bool(v, "islandSettings.islandLockdown", s.islandLockdown);
-        s.islandLockdownRange = num(v, "islandSettings.islandLockdownRange", s.islandLockdownRange);
-        s.grassSettings.enableGrassIsland = bool(v, "islandSettings.grassSettings.enableGrassIsland", s.grassSettings.enableGrassIsland);
-        s.grassSettings.spawnTree = bool(v, "islandSettings.grassSettings.spawnTree", s.grassSettings.spawnTree);
-        s.grassSettings.grassBlockType = str(v, "islandSettings.grassSettings.grassBlockType", s.grassSettings.grassBlockType);
-        s.sandSettings.enableSandIsland = bool(v, "islandSettings.sandSettings.enableSandIsland", s.sandSettings.enableSandIsland);
-        s.sandSettings.spawnCactus = bool(v, "islandSettings.sandSettings.spawnCactus", s.sandSettings.spawnCactus);
-        s.sandSettings.sandBlockType = str(v, "islandSettings.sandSettings.sandBlockType", s.sandSettings.sandBlockType);
-        s.snowSettings.enableSnowIsland = bool(v, "islandSettings.snowSettings.enableSnowIsland", s.snowSettings.enableSnowIsland);
-        s.snowSettings.spawnPumpkins = bool(v, "islandSettings.snowSettings.spawnPumpkins", s.snowSettings.spawnPumpkins);
-        s.snowSettings.spawnIgloo = bool(v, "islandSettings.snowSettings.spawnIgloo", s.snowSettings.spawnIgloo);
-        s.woodSettings.enableWoodIsland = bool(v, "islandSettings.woodSettings.enableWoodIsland", s.woodSettings.enableWoodIsland);
-        s.woodSettings.spawnWater = bool(v, "islandSettings.woodSettings.spawnWater", s.woodSettings.spawnWater);
-        s.woodSettings.spawnString = bool(v, "islandSettings.woodSettings.spawnString", s.woodSettings.spawnString);
-        s.woodSettings.woodBlockType = str(v, "islandSettings.woodSettings.woodBlockType", s.woodSettings.woodBlockType);
-        s.gogSettings.enableGoGIsland = bool(v, "islandSettings.gogSettings.enableGoGIsland", s.gogSettings.enableGoGIsland);
-
-        CommandSettings c = commandSettings;
-        c.commandName = str(v, "commandSettings.commandName", c.commandName);
-        c.oneChunkCommandAllowed = bool(v, "commandSettings.oneChunkCommandAllowed", c.oneChunkCommandAllowed);
-        c.commandBlockPos.x = num(v, "commandSettings.commandBlockPos.x", c.commandBlockPos.x);
-        c.commandBlockPos.y = num(v, "commandSettings.commandBlockPos.y", c.commandBlockPos.y);
-        c.commandBlockPos.z = num(v, "commandSettings.commandBlockPos.z", c.commandBlockPos.z);
-        c.commandBlockType = str(v, "commandSettings.commandBlockType", c.commandBlockType);
-        c.commandBlockAuto = bool(v, "commandSettings.commandBlockAuto", c.commandBlockAuto);
-        c.commandBlockCommand = str(v, "commandSettings.commandBlockCommand", c.commandBlockCommand);
-        c.commandBlockFacing = str(v, "commandSettings.commandBlockFacing", c.commandBlockFacing);
-        c.allowVisitCommand = bool(v, "commandSettings.allowVisitCommand", c.allowVisitCommand);
-        c.allowHomeCommand = bool(v, "commandSettings.allowHomeCommand", c.allowHomeCommand);
-        c.worldLoadCommands = arr(v, "commandSettings.worldLoadCommands", c.worldLoadCommands);
-        VisitSettings visit = c.visitSettings;
-        visit.allowBlockInteract = bool(v, "commandSettings.visitSettings.allowBlockInteract", visit.allowBlockInteract);
-        visit.allowItemUse = bool(v, "commandSettings.visitSettings.allowItemUse", visit.allowItemUse);
-        visit.allowEntityInteract = bool(v, "commandSettings.visitSettings.allowEntityInteract", visit.allowEntityInteract);
-        visit.allowAttack = bool(v, "commandSettings.visitSettings.allowAttack", visit.allowAttack);
-        visit.allowPickup = bool(v, "commandSettings.visitSettings.allowPickup", visit.allowPickup);
-        visit.allowBlockHarvest = bool(v, "commandSettings.visitSettings.allowBlockHarvest", visit.allowBlockHarvest);
-        visit.allowBlockPlace = bool(v, "commandSettings.visitSettings.allowBlockPlace", visit.allowBlockPlace);
-        visit.allowPerPlayerOverrides = bool(v, "commandSettings.visitSettings.allowPerPlayerOverrides", visit.allowPerPlayerOverrides);
+    private static String q(String value) {
+        return "\"" + (value == null ? "" : value.replace("\\", "\\\\").replace("\"", "\\\"")) + "\"";
     }
 
-    private static boolean bool(Map<String, String> v, String key, boolean fallback) {
-        String raw = v.get(key);
-        return raw == null ? fallback : Boolean.parseBoolean(raw);
-    }
-
-    private static int num(Map<String, String> v, String key, int fallback) {
-        String raw = v.get(key);
-        if (raw == null) return fallback;
-        try {
-            return Integer.parseInt(raw);
-        } catch (NumberFormatException e) {
-            return fallback;
-        }
-    }
-
-    private static String str(Map<String, String> v, String key, String fallback) {
-        String raw = v.get(key);
-        if (raw == null) return fallback;
+    private static String unquote(String raw) {
+        if (raw == null) return "";
         if (raw.length() >= 2 && raw.startsWith("\"") && raw.endsWith("\"")) {
             return raw.substring(1, raw.length() - 1).replace("\\\"", "\"").replace("\\\\", "\\");
         }
         return raw;
     }
 
-    private static String[] arr(Map<String, String> v, String key, String[] fallback) {
-        String raw = v.get(key);
-        if (raw == null) return fallback;
-        String body = raw.trim();
-        if (body.startsWith("[")) body = body.substring(1);
-        if (body.endsWith("]")) body = body.substring(0, body.length() - 1);
-        if (body.isBlank()) return new String[0];
-        List<String> items = new ArrayList<>();
-        for (String part : body.split(",")) {
-            String item = part.trim();
-            if (item.length() >= 2 && item.startsWith("\"") && item.endsWith("\"")) {
-                item = item.substring(1, item.length() - 1);
-            }
-            if (!item.isEmpty()) items.add(item);
-        }
-        return items.toArray(String[]::new);
-    }
-
-    private static String documented() {
-        WorldGenSettings w = worldGenSettings;
-        IslandSettings s = islandSettings;
-        CommandSettings c = commandSettings;
-        VisitSettings visit = c.visitSettings;
-        return """
-                # Void Island Control. Forge, NeoForge, and Fabric all use config/voidislandcontrol.toml
-                # Lines starting with # are comments. Restart after edits. Delete this file to regenerate defaults.
-                # Create the world with the Void Island preset, or set level-type=voidislandcontrol:void on a dedicated server.
-
-                [worldGenSettings]
-                # Void the nether. Fortresses still place when netherVoidStructures is true.
-                netherVoid = %s
-                netherVoidStructures = %s
-                # Void the end. End cities still place when endVoidStructures is true.
-                endVoid = %s
-                endVoidStructures = %s
-                # Kept from 1.12. The 1.20.1 world is the voidislandcontrol:void preset, not a world type.
-                worldGenType = %s
-                worldGenSpecialParameters = %s
-                # Biome id. The preset biome source is what generation actually uses.
-                worldBiome = %s
-                cloudLevel = %d
-                horizonLevel = %d
-                # Island home dimension. 0 overworld, -1 nether, 1 end.
-                baseDimension = %d
-
-                [islandSettings]
-                # Spawn pad: bedrock, grass, or the island type's own top block.
-                islandMainSpawnType = %s
-                # random, grid, or spiral placement of new islands.
-                islandSpawnType = %s
-                # Blocks between island centers.
-                islandDistance = %d
-                # Build and break radius around an island center. 0 disables range checks.
-                protectionBuildRange = %d
-                spawnProtection = %s
-                islandProtection = %s
-                # Pad width in blocks. 3 is a 3x3.
-                islandSize = %d
-                spawnChest = %s
-                # New islands are one chunk. Also the /island onechunk admin toggle.
-                oneChunk = %s
-                # namespace:path*count or namespace:path{snbt}*count. No item metadata in 1.20.1.
-                startingItems = %s
-                islandBiome = %s
-                islandBiomeRange = %d
-                # Y of the island surface.
-                islandYLevel = %d
-                # BEDROCK or SECONDARYBLOCK for the layer under the pad.
-                bottomBlockType = %s
-                autoCreate = %s
-                autoCreateServersOnly = %s
-                allowIslandCreation = %s
-                resetInventory = %s
-                # Structure nbt names in config/voidislandcontrolstructures.
-                customIslands = %s
-                forceSpawn = %s
-                # Spawn buff length in ticks. 1200 is 60 seconds.
-                buffTimer = %d
-                handleRespawn = %s
-                islandLockdown = %s
-                islandLockdownRange = %d
-
-                [islandSettings.grassSettings]
-                enableGrassIsland = %s
-                spawnTree = %s
-                # GRASS, DIRT, or COARSEDIRT.
-                grassBlockType = %s
-
-                [islandSettings.sandSettings]
-                enableSandIsland = %s
-                spawnCactus = %s
-                # NORMAL or RED.
-                sandBlockType = %s
-
-                [islandSettings.snowSettings]
-                enableSnowIsland = %s
-                spawnPumpkins = %s
-                spawnIgloo = %s
-
-                [islandSettings.woodSettings]
-                enableWoodIsland = %s
-                spawnWater = %s
-                spawnString = %s
-                # OAK, SPRUCE, BIRCH, JUNGLE, ACACIA, or DARKOAK.
-                woodBlockType = %s
-
-                [islandSettings.gogSettings]
-                # Garden of Glass pad. Uses Botania blocks when that mod is loaded, otherwise a pebble island.
-                enableGoGIsland = %s
-
-                [commandSettings]
-                # Base command name. Default is /island.
-                commandName = %s
-                oneChunkCommandAllowed = %s
-                # NONE, IMPULSE, REPEATING, or CHAIN. Placed on a new island when not NONE.
-                commandBlockType = %s
-                commandBlockAuto = %s
-                commandBlockCommand = %s
-                commandBlockFacing = %s
-                allowVisitCommand = %s
-                allowHomeCommand = %s
-                # Commands run once when the world first loads. Use @p for the first player.
-                worldLoadCommands = %s
-
-                [commandSettings.commandBlockPos]
-                # Offset from the island spawn for the command block.
-                x = %d
-                y = %d
-                z = %d
-
-                [commandSettings.visitSettings]
-                # Defaults for visitors. Per-player overrides apply only when allowPerPlayerOverrides is true.
-                allowBlockInteract = %s
-                allowItemUse = %s
-                allowEntityInteract = %s
-                allowAttack = %s
-                allowPickup = %s
-                allowBlockHarvest = %s
-                allowBlockPlace = %s
-                allowPerPlayerOverrides = %s
-                """.formatted(
-                w.netherVoid, w.netherVoidStructures, w.endVoid, w.endVoidStructures,
-                q(w.worldGenType), q(w.worldGenSpecialParameters), q(w.worldBiome),
-                w.cloudLevel, w.horizonLevel, w.baseDimension,
-                q(s.islandMainSpawnType), q(s.islandSpawnType), s.islandDistance, s.protectionBuildRange,
-                s.spawnProtection, s.islandProtection, s.islandSize, s.spawnChest, s.oneChunk,
-                arr(s.startingItems), q(s.islandBiome), s.islandBiomeRange, s.islandYLevel, q(s.bottomBlockType),
-                s.autoCreate, s.autoCreateServersOnly, s.allowIslandCreation, s.resetInventory, arr(s.customIslands),
-                s.forceSpawn, s.buffTimer, s.handleRespawn, s.islandLockdown, s.islandLockdownRange,
-                s.grassSettings.enableGrassIsland, s.grassSettings.spawnTree, q(s.grassSettings.grassBlockType),
-                s.sandSettings.enableSandIsland, s.sandSettings.spawnCactus, q(s.sandSettings.sandBlockType),
-                s.snowSettings.enableSnowIsland, s.snowSettings.spawnPumpkins, s.snowSettings.spawnIgloo,
-                s.woodSettings.enableWoodIsland, s.woodSettings.spawnWater, s.woodSettings.spawnString, q(s.woodSettings.woodBlockType),
-                s.gogSettings.enableGoGIsland,
-                q(c.commandName), c.oneChunkCommandAllowed,
-                q(c.commandBlockType), c.commandBlockAuto, q(c.commandBlockCommand), q(c.commandBlockFacing),
-                c.allowVisitCommand, c.allowHomeCommand, arr(c.worldLoadCommands),
-                c.commandBlockPos.x, c.commandBlockPos.y, c.commandBlockPos.z,
-                visit.allowBlockInteract, visit.allowItemUse, visit.allowEntityInteract, visit.allowAttack,
-                visit.allowPickup, visit.allowBlockHarvest, visit.allowBlockPlace, visit.allowPerPlayerOverrides
-        );
-    }
-
-    private static String q(String value) {
-        return "\"" + (value == null ? "" : value.replace("\\", "\\\\").replace("\"", "\\\"")) + "\"";
-    }
-
-    private static String arr(String[] values) {
+    private static String writeArr(String[] values) {
         if (values == null || values.length == 0) return "[]";
         StringBuilder out = new StringBuilder("[");
         for (int i = 0; i < values.length; i++) {
@@ -357,6 +214,45 @@ public final class VicConfig {
             out.append(q(values[i]));
         }
         return out.append(']').toString();
+    }
+
+    private static String[] readArr(String raw) {
+        if (raw == null) return new String[0];
+        String body = raw.trim();
+        if (body.startsWith("[")) body = body.substring(1);
+        if (body.endsWith("]")) body = body.substring(0, body.length() - 1);
+        if (body.isBlank()) return new String[0];
+        List<String> items = new ArrayList<>();
+        for (String part : body.split(",")) {
+            String item = unquote(part.trim());
+            if (!item.isEmpty()) items.add(item);
+        }
+        return items.toArray(String[]::new);
+    }
+
+    private static final class Entry {
+        final String section;
+        final String key;
+        final String comment;
+        final Supplier<String> write;
+        final Consumer<String> readRaw;
+
+        Entry(String section, String key, String comment, Supplier<String> write, Consumer<String> readRaw) {
+            this.section = section;
+            this.key = key;
+            this.comment = comment;
+            this.write = write;
+            this.readRaw = readRaw;
+        }
+
+        String write() {
+            return write.get();
+        }
+
+        void read(Map<String, String> values) {
+            String raw = values.get(section + "." + key);
+            if (raw != null) readRaw.accept(raw);
+        }
     }
 
     public static final class WorldGenSettings {
@@ -383,6 +279,7 @@ public final class VicConfig {
         public boolean spawnChest = false;
         public boolean oneChunk = false;
         public String[] startingItems = new String[0];
+        public String[] customIslands = new String[0];
         public String islandBiome = "";
         public int islandBiomeRange = 0;
         public int islandYLevel = 88;
@@ -391,12 +288,13 @@ public final class VicConfig {
         public boolean autoCreateServersOnly = false;
         public boolean allowIslandCreation = true;
         public boolean resetInventory = true;
-        public String[] customIslands = new String[0];
         public boolean forceSpawn = false;
         public boolean handleRespawn = true;
         public int buffTimer = 1200;
         public boolean islandLockdown = false;
         public int islandLockdownRange = 500;
+        public boolean deleteIslandOnAbandonment = false;
+        public boolean defaultVoidWorld = true;
         public GrassIslandSettings grassSettings = new GrassIslandSettings();
         public SandIslandSettings sandSettings = new SandIslandSettings();
         public SnowIslandSettings snowSettings = new SnowIslandSettings();

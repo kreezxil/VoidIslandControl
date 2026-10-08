@@ -7,6 +7,7 @@ import com.bartz24.voidislandcontrol.config.VicConfig;
 import com.bartz24.voidislandcontrol.world.GoGSupport;
 import com.bartz24.voidislandcontrol.world.VoidChunkGenerator;
 import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionResult;
@@ -14,13 +15,20 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.chunk.ChunkGenerator;
 
 public final class Protection {
+    private static final Component CREATE_FIRST = Component.literal("create an island first");
+
     private Protection() {
     }
 
     public static boolean isVic(ServerLevel level) {
-        return level.getChunkSource().getGenerator() instanceof VoidChunkGenerator;
+        if (level == null) return false;
+        ChunkGenerator gen = level.getChunkSource().getGenerator();
+        if (gen instanceof VoidChunkGenerator) return true;
+        String name = gen.getClass().getName();
+        return name.endsWith("VoidChunkGenerator") || name.contains("voidislandcontrol");
     }
 
     public static boolean denyBreak(ServerPlayer player, BlockPos pos) {
@@ -41,6 +49,10 @@ public final class Protection {
 
     public static boolean denyAttack(ServerPlayer player, Entity target) {
         if (!(player.level() instanceof ServerLevel level) || !isVic(level)) return false;
+        if (needsIsland(player) && onSpawnIsland(player)) {
+            tellCreate(player);
+            return true;
+        }
         if (!isRestrictedVisitor(player)) return false;
         VisitPerms perms = effective(player);
         return perms != null && !perms.allowAttack;
@@ -48,15 +60,24 @@ public final class Protection {
 
     public static boolean denyPickup(ServerPlayer player, ItemEntity item) {
         if (!(player.level() instanceof ServerLevel level) || !isVic(level)) return false;
+        if (VicConfig.islandSettings.spawnProtection && needsIsland(player) && onSpawnIsland(player)) {
+            tellCreate(player);
+            return true;
+        }
         if (!isRestrictedVisitor(player)) return false;
         VisitPerms perms = effective(player);
         return perms != null && !perms.allowPickup;
     }
 
     private static boolean deny(ServerPlayer player, BlockPos pos, boolean harvest, boolean place, boolean use) {
-        if (!(player.level() instanceof ServerLevel level) || !isVic(level)) return false;
+        if (!(player.level() instanceof ServerLevel level)) return false;
         if (player.isCreative() || IslandManager.isOperator(player)) return false;
         if (level.dimension() != VicConfig.baseLevel()) return false;
+        if (VicConfig.islandSettings.spawnProtection && needsIsland(player) && onSpawnIsland(player, pos)) {
+            tellCreate(player);
+            return true;
+        }
+        if (!isVic(level)) return false;
 
         if (isRestrictedVisitor(player)) {
             VisitPerms perms = effective(player);
@@ -67,20 +88,32 @@ public final class Protection {
             return false;
         }
 
-        if (VicConfig.islandSettings.spawnProtection && nearSpawn(player)) return true;
         if (!VicConfig.islandSettings.islandProtection) return false;
         IslandPos own = IslandManager.getPlayerIsland(player.getUUID());
+        if (own == null) return false;
         int dist = VicConfig.islandSettings.islandDistance;
         int range = Math.min(VicConfig.islandSettings.protectionBuildRange, Math.max(1, dist / 2));
-        int cx = own == null ? 0 : own.getX() * dist;
-        int cz = own == null ? 0 : own.getY() * dist;
+        int cx = own.getX() * dist;
+        int cz = own.getY() * dist;
         return Math.abs(pos.getX() - cx) > range || Math.abs(pos.getZ() - cz) > range;
     }
 
-    private static boolean nearSpawn(ServerPlayer player) {
-        int range = Math.min(VicConfig.islandSettings.protectionBuildRange, 32);
-        return Math.abs(player.getX()) <= range && Math.abs(player.getZ()) <= range
-                && IslandManager.getPlayerIsland(player.getUUID()) == null;
+    private static boolean needsIsland(ServerPlayer player) {
+        return IslandManager.getPlayerIsland(player.getUUID()) == null;
+    }
+
+    private static boolean onSpawnIsland(ServerPlayer player) {
+        return onSpawnIsland(player, player.blockPosition());
+    }
+
+    private static boolean onSpawnIsland(ServerPlayer player, BlockPos pos) {
+        int range = Math.max(8, VicConfig.islandSettings.islandSize + 8);
+        return Math.abs(pos.getX()) <= range && Math.abs(pos.getZ()) <= range
+                && player.level().dimension() == VicConfig.baseLevel();
+    }
+
+    private static void tellCreate(ServerPlayer player) {
+        player.displayClientMessage(CREATE_FIRST, true);
     }
 
     private static boolean isRestrictedVisitor(ServerPlayer player) {
