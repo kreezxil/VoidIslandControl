@@ -56,6 +56,12 @@ public final class VicConfig {
                 if (!entry.section.equals(section)) {
                     section = entry.section;
                     writer.write("\n[" + section + "]\n");
+                    if ("commandSettings.visitSettings".equals(section)) {
+                        writer.write("# These values are the defaults for visitors and for joined members who have no /island permission override.\n");
+                        writer.write("# False here means that action is denied. True here means it is allowed.\n");
+                        writer.write("# A per-player override replaces that one flag only, and only when allowPerPlayerOverrides is true.\n");
+                        writer.write("# If allowPerPlayerOverrides is false, these values are the only rules.\n");
+                    }
                 }
                 if (entry.comment != null && !entry.comment.isBlank()) {
                     writer.write("# " + entry.comment + "\n");
@@ -129,7 +135,7 @@ public final class VicConfig {
 
         list.add(bool("islandSettings.gogSettings", "enableGoGIsland", "Garden of Glass pad. Uses Botania blocks when that mod is loaded, otherwise a pebble island.", () -> s.gogSettings.enableGoGIsland, v -> s.gogSettings.enableGoGIsland = v));
 
-        list.add(str("commandSettings", "commandName", "Base command name. Default is /island.", () -> c.commandName, v -> c.commandName = v));
+        list.add(str("commandSettings", "commandName", "Base command name. Default is /island. This is the alias used in the spawn-protection hint.", () -> c.commandName, v -> c.commandName = v));
         list.add(bool("commandSettings", "oneChunkCommandAllowed", "", () -> c.oneChunkCommandAllowed, v -> c.oneChunkCommandAllowed = v));
         list.add(str("commandSettings", "commandBlockType", "NONE, IMPULSE, REPEATING, or CHAIN. Placed on a new island when not NONE.", () -> c.commandBlockType, v -> c.commandBlockType = v));
         list.add(bool("commandSettings", "commandBlockAuto", "", () -> c.commandBlockAuto, v -> c.commandBlockAuto = v));
@@ -143,14 +149,14 @@ public final class VicConfig {
         list.add(num("commandSettings.commandBlockPos", "y", "", () -> c.commandBlockPos.y, v -> c.commandBlockPos.y = v));
         list.add(num("commandSettings.commandBlockPos", "z", "", () -> c.commandBlockPos.z, v -> c.commandBlockPos.z = v));
 
-        list.add(bool("commandSettings.visitSettings", "allowBlockInteract", "Defaults for visitors. Per-player overrides apply only when allowPerPlayerOverrides is true.", () -> visit.allowBlockInteract, v -> visit.allowBlockInteract = v));
+        list.add(bool("commandSettings.visitSettings", "allowBlockInteract", "", () -> visit.allowBlockInteract, v -> visit.allowBlockInteract = v));
         list.add(bool("commandSettings.visitSettings", "allowItemUse", "", () -> visit.allowItemUse, v -> visit.allowItemUse = v));
         list.add(bool("commandSettings.visitSettings", "allowEntityInteract", "", () -> visit.allowEntityInteract, v -> visit.allowEntityInteract = v));
         list.add(bool("commandSettings.visitSettings", "allowAttack", "", () -> visit.allowAttack, v -> visit.allowAttack = v));
         list.add(bool("commandSettings.visitSettings", "allowPickup", "", () -> visit.allowPickup, v -> visit.allowPickup = v));
         list.add(bool("commandSettings.visitSettings", "allowBlockHarvest", "", () -> visit.allowBlockHarvest, v -> visit.allowBlockHarvest = v));
         list.add(bool("commandSettings.visitSettings", "allowBlockPlace", "", () -> visit.allowBlockPlace, v -> visit.allowBlockPlace = v));
-        list.add(bool("commandSettings.visitSettings", "allowPerPlayerOverrides", "", () -> visit.allowPerPlayerOverrides, v -> visit.allowPerPlayerOverrides = v));
+        list.add(bool("commandSettings.visitSettings", "allowPerPlayerOverrides", "True lets /island permission set one player before they visit or join. That override replaces the defaults above for that player only. False ignores overrides and these defaults are the only rules.", () -> visit.allowPerPlayerOverrides, v -> visit.allowPerPlayerOverrides = v));
         return list;
     }
 

@@ -59,7 +59,10 @@ public final class IslandCommands {
                         .executes(ctx -> visit(ctx.getSource().getPlayerOrException(), StringArgumentType.getString(ctx, "player"), true))))
                 .then(Commands.literal("list").executes(ctx -> list(ctx.getSource().getPlayerOrException())))
                 .then(Commands.literal("permission")
-                        .then(Commands.argument("player", StringArgumentType.word()).suggests(KNOWN)
+                        .then(Commands.argument("player", StringArgumentType.word()).suggests(PLAYERS)
+                                .then(Commands.literal("show")
+                                        .executes(ctx -> showPermissions(ctx.getSource().getPlayerOrException(),
+                                                StringArgumentType.getString(ctx, "player"))))
                                 .then(Commands.argument("flag", StringArgumentType.word()).suggests(FLAGS)
                                         .then(Commands.argument("value", StringArgumentType.word()).suggests(BOOLS)
                                                 .executes(ctx -> permission(ctx.getSource().getPlayerOrException(),
@@ -80,6 +83,12 @@ public final class IslandCommands {
             SharedSuggestionProvider.suggest(VisitPerms.FLAGS, builder);
     private static final SuggestionProvider<CommandSourceStack> BOOLS = (ctx, builder) ->
             SharedSuggestionProvider.suggest(new String[]{"true", "false"}, builder);
+    private static final SuggestionProvider<CommandSourceStack> PLAYERS = (ctx, builder) -> {
+        java.util.LinkedHashSet<String> names = new java.util.LinkedHashSet<>();
+        java.util.Collections.addAll(names, ctx.getSource().getServer().getPlayerNames());
+        names.addAll(IslandManager.getKnownIslandPlayerNames(ctx.getSource().getServer()));
+        return SharedSuggestionProvider.suggest(names, builder);
+    };
 
     private static boolean vic(ServerPlayer player) {
         if (!Protection.isVic(player.serverLevel()) && !(player.server.getLevel(VicConfig.baseLevel()) != null
@@ -115,11 +124,19 @@ public final class IslandCommands {
                     : IslandManager.getIndexOfIslandType(spawnType);
         }
         if (type < 0) type = 0;
+        VicSavedData.loadFile(player.server.getLevel(VicConfig.baseLevel()));
         IslandPos grid = IslandManager.getNextIsland();
+        while ((grid.getX() == 0 && grid.getY() == 0) || IslandManager.hasPosition(grid.getX(), grid.getY())) {
+            IslandManager.currentIslands.add(new IslandPos("reserved", grid.getX(), grid.getY()));
+            grid = IslandManager.getNextIsland();
+            IslandManager.currentIslands.remove(IslandManager.currentIslands.size() - 1);
+        }
         var gen = IslandManager.islandGenerations.get(type);
-        IslandPos island = new IslandPos(gen.identifier, grid.getX(), grid.getY(), player.getUUID());
+        IslandPos island = new IslandPos(gen.identifier, grid.getX(), grid.getY());
+        island.getPlayerUUIDs().clear();
         island.addNewPlayer(player.getUUID());
         IslandManager.currentIslands.add(island);
+        VicSavedData.mark(player.server.getLevel(VicConfig.baseLevel()));
         ServerLevel level = player.server.getLevel(VicConfig.baseLevel());
         BlockPos spawn = IslandManager.worldPos(island);
         try {
@@ -369,6 +386,12 @@ public final class IslandCommands {
             player.sendSystemMessage(Component.literal("That player doesn't have an island."));
             return 0;
         }
+        if (VicConfig.commandSettings.visitSettings.allowPerPlayerOverrides
+                && island.getVisitPerms(player.getUUID()) == null
+                && !island.getPlayerUUIDs().contains(player.getUUID().toString())) {
+            player.sendSystemMessage(Component.literal("That island has not set your visit permissions."));
+            return 0;
+        }
         BlockPos pos = IslandManager.worldPos(island);
         IslandManager.setVisitLoc(player.getUUID(), island.getX(), island.getY(), spectate);
         player.setGameMode(spectate ? GameType.SPECTATOR : IslandManager.visitGameType(player));
@@ -426,6 +449,34 @@ public final class IslandCommands {
         }
         VicSavedData.mark(player.server.getLevel(VicConfig.baseLevel()));
         player.sendSystemMessage(Component.literal("Set " + flag + " = " + value + " for " + name + " on your island."));
+        return 1;
+    }
+
+    private static int showPermissions(ServerPlayer player, String name) {
+        IslandPos island = IslandManager.getPlayerIsland(player.getUUID());
+        if (island == null) {
+            player.sendSystemMessage(Component.literal("You don't have an island."));
+            return 0;
+        }
+        if (!island.isOwner(player.getUUID())) {
+            player.sendSystemMessage(Component.literal("Only the island owner can view visit permissions."));
+            return 0;
+        }
+        UUID target = IslandManager.findPlayerUUID(player.server, name);
+        if (target == null) {
+            player.sendSystemMessage(Component.literal("Player doesn't exist or has never logged in."));
+            return 0;
+        }
+        VisitPerms override = island.getVisitPerms(target);
+        VisitPerms shown = override == null ? VisitPerms.fromConfig() : override;
+        player.sendSystemMessage(Component.literal(name + (override == null ? " (config defaults)" : " (override)")));
+        player.sendSystemMessage(Component.literal("  allowBlockInteract = " + shown.allowBlockInteract));
+        player.sendSystemMessage(Component.literal("  allowItemUse = " + shown.allowItemUse));
+        player.sendSystemMessage(Component.literal("  allowEntityInteract = " + shown.allowEntityInteract));
+        player.sendSystemMessage(Component.literal("  allowAttack = " + shown.allowAttack));
+        player.sendSystemMessage(Component.literal("  allowPickup = " + shown.allowPickup));
+        player.sendSystemMessage(Component.literal("  allowBlockHarvest = " + shown.allowBlockHarvest));
+        player.sendSystemMessage(Component.literal("  allowBlockPlace = " + shown.allowBlockPlace));
         return 1;
     }
 

@@ -26,18 +26,17 @@ public class IslandPos {
         this.type = type == null ? "" : type;
         this.posX = x;
         this.posY = y;
-        for (UUID id : ids) {
-            playerUUIDs.add(id.toString());
-        }
+        for (UUID id : ids) addNewPlayer(id);
     }
 
     public void addNewPlayer(UUID playerUUID) {
+        if (playerUUID == null) return;
         String id = playerUUID.toString();
         if (!playerUUIDs.contains(id)) playerUUIDs.add(id);
     }
 
     public void removePlayer(UUID playerUUID) {
-        playerUUIDs.remove(playerUUID.toString());
+        if (playerUUID != null) playerUUIDs.remove(playerUUID.toString());
     }
 
     public int getX() {
@@ -61,11 +60,11 @@ public class IslandPos {
     }
 
     public boolean isOwner(UUID player) {
-        return !playerUUIDs.isEmpty() && playerUUIDs.get(0).equals(player.toString());
+        return player != null && !playerUUIDs.isEmpty() && playerUUIDs.get(0).equals(player.toString());
     }
 
     public VisitPerms getVisitPerms(UUID visitor) {
-        return visitPerms.get(visitor.toString());
+        return visitor == null ? null : visitPerms.get(visitor.toString());
     }
 
     public VisitPerms getOrCreateVisitPerms(UUID visitor) {
@@ -102,7 +101,8 @@ public class IslandPos {
         IslandPos pos = new IslandPos(nbt.getString("type"), nbt.getInt("posX"), nbt.getInt("posY"));
         ListTag list = nbt.getList("UUIDs", Tag.TAG_COMPOUND);
         for (int i = 0; i < list.size(); i++) {
-            pos.playerUUIDs.add(list.getCompound(i).getString("playerUUID"));
+            String id = list.getCompound(i).getString("playerUUID");
+            if (!id.isBlank() && !pos.playerUUIDs.contains(id)) pos.playerUUIDs.add(id);
         }
         ListTag permList = nbt.getList("VisitPerms", Tag.TAG_COMPOUND);
         for (int i = 0; i < permList.size(); i++) {
@@ -113,7 +113,7 @@ public class IslandPos {
     }
 
     public VisitPerms effectivePerms(UUID visitor) {
-        if (VicConfig.commandSettings.visitSettings.allowPerPlayerOverrides) {
+        if (visitor != null && VicConfig.commandSettings.visitSettings.allowPerPlayerOverrides) {
             VisitPerms override = visitPerms.get(visitor.toString());
             if (override != null) return override;
         }

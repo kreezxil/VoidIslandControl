@@ -18,8 +18,6 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.chunk.ChunkGenerator;
 
 public final class Protection {
-    private static final Component CREATE_FIRST = Component.literal("create an island first");
-
     private Protection() {
     }
 
@@ -49,7 +47,11 @@ public final class Protection {
 
     public static boolean denyAttack(ServerPlayer player, Entity target) {
         if (!(player.level() instanceof ServerLevel level) || !isVic(level)) return false;
-        if (needsIsland(player) && onSpawnIsland(player)) {
+        if (player.isCreative() || IslandManager.isOperator(player)) return false;
+        IslandPos own = IslandManager.getPlayerIsland(player.getUUID());
+        if (own != null && own.isOwner(player.getUUID())) return false;
+        if (own != null) return deniedByPerms(player, own, false, false, false) && !own.effectivePerms(player.getUUID()).allowAttack;
+        if (VicConfig.islandSettings.spawnProtection && own == null && onSpawnIsland(player)) {
             tellCreate(player);
             return true;
         }
@@ -60,7 +62,11 @@ public final class Protection {
 
     public static boolean denyPickup(ServerPlayer player, ItemEntity item) {
         if (!(player.level() instanceof ServerLevel level) || !isVic(level)) return false;
-        if (VicConfig.islandSettings.spawnProtection && needsIsland(player) && onSpawnIsland(player)) {
+        if (player.isCreative() || IslandManager.isOperator(player)) return false;
+        IslandPos own = IslandManager.getPlayerIsland(player.getUUID());
+        if (own != null && own.isOwner(player.getUUID())) return false;
+        if (own != null) return !own.effectivePerms(player.getUUID()).allowPickup;
+        if (VicConfig.islandSettings.spawnProtection && own == null && onSpawnIsland(player)) {
             tellCreate(player);
             return true;
         }
@@ -73,7 +79,12 @@ public final class Protection {
         if (!(player.level() instanceof ServerLevel level)) return false;
         if (player.isCreative() || IslandManager.isOperator(player)) return false;
         if (level.dimension() != VicConfig.baseLevel()) return false;
-        if (VicConfig.islandSettings.spawnProtection && needsIsland(player) && onSpawnIsland(player, pos)) {
+        IslandPos own = IslandManager.getPlayerIsland(player.getUUID());
+        if (own != null && own.isOwner(player.getUUID()) && onOwnPlot(own, pos)) return false;
+        if (own != null && !own.isOwner(player.getUUID()) && onOwnPlot(own, pos)) {
+            return deniedByPerms(player, own, harvest, place, use);
+        }
+        if (VicConfig.islandSettings.spawnProtection && own == null && onSpawnIsland(player, pos)) {
             tellCreate(player);
             return true;
         }
@@ -89,7 +100,6 @@ public final class Protection {
         }
 
         if (!VicConfig.islandSettings.islandProtection) return false;
-        IslandPos own = IslandManager.getPlayerIsland(player.getUUID());
         if (own == null) return false;
         int dist = VicConfig.islandSettings.islandDistance;
         int range = Math.min(VicConfig.islandSettings.protectionBuildRange, Math.max(1, dist / 2));
@@ -98,8 +108,21 @@ public final class Protection {
         return Math.abs(pos.getX() - cx) > range || Math.abs(pos.getZ() - cz) > range;
     }
 
-    private static boolean needsIsland(ServerPlayer player) {
-        return IslandManager.getPlayerIsland(player.getUUID()) == null;
+    private static boolean deniedByPerms(ServerPlayer player, IslandPos island, boolean harvest, boolean place, boolean use) {
+        VisitPerms perms = island.effectivePerms(player.getUUID());
+        if (perms == null) return true;
+        if (harvest && !perms.allowBlockHarvest) return true;
+        if (place && !perms.allowBlockPlace) return true;
+        if (use && !perms.allowBlockInteract && !perms.allowItemUse) return true;
+        return false;
+    }
+
+    private static boolean onOwnPlot(IslandPos own, BlockPos pos) {
+        int dist = VicConfig.islandSettings.islandDistance;
+        int range = Math.max(VicConfig.islandSettings.islandSize + 8, Math.max(1, dist / 2));
+        int cx = own.getX() * dist;
+        int cz = own.getY() * dist;
+        return Math.abs(pos.getX() - cx) <= range && Math.abs(pos.getZ() - cz) <= range;
     }
 
     private static boolean onSpawnIsland(ServerPlayer player) {
